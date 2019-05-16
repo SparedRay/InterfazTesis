@@ -40,6 +40,9 @@ class FullScreenWindow:
     def AdminVolver(self):
     	self.frameAdmin.pack_forget()
     	self.framePrincipal.pack(fill=BOTH,expand=1)
+
+    def Comodin(self):
+        pass
         
     def __init__(self):
         self.tk = Tk()
@@ -54,10 +57,34 @@ class FullScreenWindow:
         self.framePrincipal.pack(fill=BOTH,expand=1)
         
         self.frameAdmin = Frame(self.tk)
-        self.labelAdmin = Label(self.frameAdmin, text="FRAME DE ADMIN")
-        self.labelAdmin.grid(column=0, row=1)
+        self.labelContenedor1 = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelContenedor1.grid(column=0, row=0)
+        self.labelContenedor2 = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelContenedor2.grid(column=0, row=1)
+        self.labelContenedor3 = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelContenedor3.grid(column=0, row=2)
+        self.labelContenedor4 = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelContenedor4.grid(column=0, row=3)
+        self.labelContenedor5 = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelContenedor5.grid(column=0, row=4)
+        self.labelContenedor6 = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelContenedor6.grid(column=0, row=5)
+        self.TextBoxContenedor1=Entry(self.frameAdmin)
+        self.TextBoxContenedor1.grid(column=1,row=0)
+        self.TextBoxContenedor2=Entry(self.frameAdmin)
+        self.TextBoxContenedor2.grid(column=1,row=1)
+        self.TextBoxContenedor3=Entry(self.frameAdmin)
+        self.TextBoxContenedor3.grid(column=1,row=2)
+        self.TextBoxContenedor4=Entry(self.frameAdmin)
+        self.TextBoxContenedor4.grid(column=1,row=3)
+        self.TextBoxContenedor5=Entry(self.frameAdmin)
+        self.TextBoxContenedor5.grid(column=1,row=4)
+        self.TextBoxContenedor6=Entry(self.frameAdmin)
+        self.TextBoxContenedor6.grid(column=1,row=5)
+        self.btn4 = Button(self.frameAdmin, text="Guardar Cambios", command=self.Comodin , height = 10, width = 10)
+        self.btn4.grid(column=2, row=0, pady=100)
         self.btn3 = Button(self.frameAdmin, text="Volver", command=self.AdminVolver , height = 10, width = 10)
-        self.btn3.grid(column=0, row=0, pady=100)
+        self.btn3.grid(column=2, row=6)
         self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 10, width = 10)
         self.btn2 = Button(self.framePrincipal, text="User", command=lambda:self.clicked("User") , height = 10, width = 10)
         self.btn1.grid(column=0, row=0, padx= 300, pady=100, sticky= "ewns")
