@@ -33,26 +33,32 @@ class FullScreenWindow:
         self.admin.title(t)
         print(t)
 
-    def AdminVentana(self,t):
+    def AdminVentana(self):
     	self.framePrincipal.pack_forget()
-    	self.frameAdmin.pack()
-        
+    	self.frameAdmin.pack(fill=BOTH,expand=1)
+    
+    def AdminVolver(self):
+    	self.frameAdmin.pack_forget()
+    	self.framePrincipal.pack(fill=BOTH,expand=1)
         
     def __init__(self):
         self.tk = Tk()
         self.tk.title("Soy un titulo")
         self.tk.attributes("-zoomed", True)
         self.tk.attributes("-fullscreen", False)
-        self.frameAdmin = Frame(self.tk)
-        self.labelAdmin = Label(self.tk, text="FRAME DE ADMIN")
-        self.labelAdmin.grid(column=0, row=0)
+
        	#etiqueta = Tkinter.Label(root, text="Probando Label")
         self.framePrincipal = Frame(self.tk)
         #~ self.tk.configure (bg="green")
         self.framePrincipal.configure (bg="#eaebf1")
         self.framePrincipal.pack(fill=BOTH,expand=1)
-
-        self.btn1 = Button(self.framePrincipal, text="Admin", command=lambda:self.clicked("Admin") , height = 10, width = 10)
+        
+        self.frameAdmin = Frame(self.tk)
+        self.labelAdmin = Label(self.frameAdmin, text="FRAME DE ADMIN")
+        self.labelAdmin.grid(column=0, row=1)
+        self.btn3 = Button(self.frameAdmin, text="Volver", command=self.AdminVolver , height = 10, width = 10)
+        self.btn3.grid(column=0, row=0, pady=100)
+        self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 10, width = 10)
         self.btn2 = Button(self.framePrincipal, text="User", command=lambda:self.clicked("User") , height = 10, width = 10)
         self.btn1.grid(column=0, row=0, padx= 300, pady=100, sticky= "ewns")
         self.btn2.grid(column=1, row=0, pady=100)
