@@ -21,19 +21,35 @@
 #  MA 02110-1301, USA.
 #  
 #  
+#PROGRAMA
 import sys
 import sqlite3
 from tkinter import *
+import subprocess
+import threading
+
 
 
 class FullScreenWindow:
+        
+    def TecladoVirtual(self):
+        self.hiloVentana = subprocess.call("/usr/bin/matchbox-keyboard", shell=False)
+        
+
+    def AbrirTeclado(self, event=None):
+        self.hilo1 = threading.Thread(target=self.TecladoVirtual)
+        self.hilo1.start()
     
     def clicked(self,t):
+        #~ print subprocess.Popen("/usr/bin/matchbox-keyboard", shell=True, stdout=subprocess.PIPE).stdout.read()
+        #~ return_code = subprocess.call("/usr/bin/matchbox-keyboard", shell=False)  
+
         self.admin = Toplevel(self.tk)
         self.admin.title(t)
         print(t)
 
     def AdminVentana(self):
+        self.labelBienvenida.pack_forget()
         connection = sqlite3.connect("DBSystem.sqlite3")
         cursor = connection.cursor()
     
@@ -53,6 +69,7 @@ class FullScreenWindow:
         else:
             cursor.execute("SELECT * FROM Contenedores")
             contenedores = cursor.fetchall()
+            print(contenedores)
             self.contenedor1Nombre.set(contenedores[0][1])
             self.contenedor2Nombre.set(contenedores[1][1])
             self.contenedor3Nombre.set(contenedores[2][1])
@@ -70,6 +87,9 @@ class FullScreenWindow:
     
     def AdminVolver(self):
     	self.frameAdmin.pack_forget()
+    	self.labelBienvenida = Label(self.tk, text="Bienvenido")
+    	self.labelBienvenida.configure(bg="#eaebf1")
+    	self.labelBienvenida.pack()
     	self.framePrincipal.pack(fill=BOTH,expand=1)
 
     def ActualizarContenedores(self):
@@ -87,9 +107,59 @@ class FullScreenWindow:
         
     def __init__(self):
         self.tk = Tk()
+        self.tk.geometry("480x320")
         self.tk.title("Soy un titulo")
-        self.tk.attributes("-zoomed", True)
+        #~ self.tk.attributes("-zoomed", True)#PARA TRABAJAR EN LCD
+        self.tk.attributes("-zoomed", False)#PARA TRABAJAR EN HDMI
         self.tk.attributes("-fullscreen", False)
+        self.tk.configure (bg="#eaebf1")
+        
+        
+        #FRAME PRINCIPAL
+
+        self.labelBienvenida = Label(self.tk, text="Bienvenido")
+        self.labelBienvenida.configure (bg="#eaebf1")
+        self.labelBienvenida.pack()
+        self.framePrincipal = Frame(self.tk)
+        self.framePrincipal.configure (bg="#eaebf1")
+        self.framePrincipal.pack(fill=BOTH,expand=1)
+        
+        
+        self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 5, width = 10)
+        self.btn2 = Button(self.framePrincipal, text="User", command=lambda:self.clicked("User") , height = 5, width = 10)
+        self.btn1.grid(column=0, row=0, padx=80, pady=40)
+        self.btn2.grid(column=1, row=0, padx=10, pady=40)
+        #~ self.btn1.pack(side= LEFT)
+        #~ self.btn2.pack(side= RIGHT)
+        self.btn1.configure (bg="#f1f0ea")
+        self.btn2.configure (bg="#f1f0ea")
+        #~ self.listBox = Listbox(self.framePrincipal)
+        #~ self.listBox.grid(column=2, row=1)
+        #~ self.scrollList = Scrollbar(self.framePrincipal, command= self.listBox.yview)
+        #~ self.scrollList.grid(column=3, row=1, sticky="nesw")
+        #~ self.listBox.config(yscrollcommand=self.scrollList.set)
+        
+        #~ self.listBox.insert(END,'ELEMENTO1')
+        #~ self.listBox.insert(END,'ELEMENTO2')
+        #~ self.listBox.insert(END,'ELEMENTO3')
+        #~ self.listBox.insert(END,'ELEMENTO4')
+        #~ self.listBox.insert(END,'ELEMENTO5')
+        #~ self.listBox.insert(END,'ELEMENTO6')
+        #~ self.listBox.insert(END,'ELEMENTO7')
+        #~ self.listBox.insert(END,'ELEMENTO8')
+        #~ self.listBox.insert(END,'ELEMENTO9')
+        #~ self.listBox.insert(END,'ELEMENTO10')
+        #~ self.listBox.insert(END,'ELEMENTO11')
+        #~ self.listBox.insert(END,'ELEMENTO12')
+        #~ self.listBox.insert(END,'ELEMENTO13')
+        #~ self.listBox.insert(END,'ELEMENTO14')
+        #~ self.listBox.insert(END,'ELEMENTO15')
+        self.state = False
+        self.tk.bind("<F11>", self.toggle_fullscreen)
+        self.tk.bind("<Escape>", self.end_fullscreen)   
+        
+        
+        #FRAME ADMIN
         
         self.contenedor1Nombre = StringVar()
         self.contenedor2Nombre = StringVar()
@@ -98,11 +168,7 @@ class FullScreenWindow:
         self.contenedor5Nombre = StringVar()
         self.contenedor6Nombre = StringVar()
 
-       	#etiqueta = Tkinter.Label(root, text="Probando Label")
-        self.framePrincipal = Frame(self.tk)
-        #~ self.tk.configure (bg="green")
-        self.framePrincipal.configure (bg="#eaebf1")
-        self.framePrincipal.pack(fill=BOTH,expand=1)
+
         
         self.frameAdmin = Frame(self.tk)
         self.labelContenedor1 = Label(self.frameAdmin, text="Contenedor 1")
@@ -132,16 +198,10 @@ class FullScreenWindow:
         self.btn4 = Button(self.frameAdmin, text="Guardar Cambios", command=self.ActualizarContenedores)
         self.btn4.grid(column=2, row=7)
         self.btn3 = Button(self.frameAdmin, text="Volver", command=self.AdminVolver)
-        self.btn3.grid(column=2, row=0)
-        self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 10, width = 10)
-        self.btn2 = Button(self.framePrincipal, text="User", command=lambda:self.clicked("User") , height = 10, width = 10)
-        self.btn1.grid(column=0, row=0, padx= 300, pady=100, sticky= "ewns")
-        self.btn2.grid(column=1, row=0, pady=100)
-        self.btn1.configure (bg="#f1f0ea")
-        self.btn2.configure (bg="#f1f0ea")
-        self.state = False
-        self.tk.bind("<F11>", self.toggle_fullscreen)
-        self.tk.bind("<Escape>", self.end_fullscreen)        
+        self.btn3.grid(column=2, row=0)     
+        self.TextBoxContenedor1.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        #~ self.hilo1.terminate()
+
     
 
         
