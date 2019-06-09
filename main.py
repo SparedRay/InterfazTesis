@@ -50,6 +50,21 @@ class FullScreenWindow:
 
     def AdminVentana(self):
         self.labelBienvenida.pack_forget()
+        
+        self.framePrincipal.pack_forget()
+        self.labelAdmin.pack()
+        self.frameAdmin.pack(fill=BOTH,expand=1)
+
+    def RecetasVentana(self):
+        self.labelAdmin.pack_forget()
+        
+        self.frameAdmin.pack_forget()
+        self.labelReceta.pack()
+        self.frameReceta.pack()
+        
+
+    def ContenedorVentana(self):
+        self.labelBienvenida.pack_forget()
         connection = sqlite3.connect("DBSystem.sqlite3")
         cursor = connection.cursor()
     
@@ -79,18 +94,28 @@ class FullScreenWindow:
             
         connection.close()
 
-        self.framePrincipal.pack_forget()
-        self.frameAdmin.pack(fill=BOTH,expand=1)
+        self.frameAdmin.pack_forget()
+        self.labelAdmin.pack_forget()
+        self.frameContenedor.pack(fill=BOTH,expand=1)
             
             
 
     
     def AdminVolver(self):
-    	self.frameAdmin.pack_forget()
-    	self.labelBienvenida = Label(self.tk, text="Bienvenido")
-    	self.labelBienvenida.configure(bg="#eaebf1")
-    	self.labelBienvenida.pack()
-    	self.framePrincipal.pack(fill=BOTH,expand=1)
+    	self.frameContenedor.pack_forget()
+    	self.frameReceta.pack_forget()
+    	self.labelReceta.pack_forget()
+        
+    	#~ self.labelBienvenida = Label(self.tk, text="Bienvenido")
+    	#~ self.labelBienvenida.configure(bg="#eaebf1")
+    	self.labelAdmin.pack()
+    	self.frameAdmin.pack(fill=BOTH,expand=1)
+        
+    def PrincipalVolver(self):
+        self.frameAdmin.pack_forget()
+        self.labelAdmin.pack_forget()
+        self.labelBienvenida.pack()
+        self.framePrincipal.pack(fill=BOTH,expand=1)
 
     def ActualizarContenedores(self):
         connection = sqlite3.connect("DBSystem.sqlite3")
@@ -123,6 +148,8 @@ class FullScreenWindow:
         self.framePrincipal = Frame(self.tk)
         self.framePrincipal.configure (bg="#eaebf1")
         self.framePrincipal.pack(fill=BOTH,expand=1)
+        
+        
         
         
         self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 5, width = 10)
@@ -158,8 +185,77 @@ class FullScreenWindow:
         self.tk.bind("<F11>", self.toggle_fullscreen)
         self.tk.bind("<Escape>", self.end_fullscreen)   
         
-        
         #FRAME ADMIN
+        
+        self.frameAdmin = Frame(self.tk)
+        
+        self.labelAdmin = Label(self.tk, text="Admin")
+        self.labelAdmin.configure (bg="#eaebf1")
+
+        self.frameAdmin.configure (bg="#eaebf1")  
+        
+        
+        self.btnContenedores = Button(self.frameAdmin, text="Contenedores", command=self.ContenedorVentana , height = 5, width = 10)
+        self.btnRecetas = Button(self.frameAdmin, text="Recetas", command=self.RecetasVentana , height = 5, width = 10)
+        self.btnContenedores.grid(column=0, row=0, padx=80, pady=40)
+        self.btnRecetas.grid(column=1, row=0, padx=10, pady=40)
+        self.btnVolverPrincipal = Button(self.frameAdmin, text="Volver", command=self.PrincipalVolver)
+        self.btnVolverPrincipal.grid(column=2, row=1)    
+        
+        #FRAME RECETA
+        
+        self.frameReceta = Frame(self.tk)
+        
+        self.labelReceta = Label(self.tk, text="Recetas")
+        self.labelReceta.configure (bg="#eaebf1")
+
+        self.frameReceta.configure (bg="#eaebf1")  
+        
+        self.textoBotonEliminarReceta = """Eliminar
+        Receta        
+        """
+        self.textoBotonEditarReceta = """Editar
+        Receta        
+        """
+        self.textoBotonVerReceta = """Ver
+        Receta        
+        """
+        
+        self.btnVerReceta = Button(self.frameReceta, text=self.textoBotonVerReceta, command=lambda:self.clicked("Ver /n Receta") , height = 5, width = 5)
+        self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=lambda:self.clicked("Editar Receta") , height = 5, width = 5)
+        self.btnEliminarReceta = Button(self.frameReceta, text=self.textoBotonEliminarReceta, command=lambda:self.clicked('Eliminar \n' + 'Receta') , height = 5, width = 5)
+        self.btnVolverAdmin = Button(self.frameReceta, text="Volver", command=self.AdminVolver)
+        self.btnVerReceta.grid(column=0, row=0,padx=5)    
+        self.btnEditarReceta.grid(column=1, row=0,padx=5)
+        self.btnEliminarReceta.grid(column=2, row=0,padx=5)
+        self.btnVolverAdmin.grid(column=3, row=1, pady=10)
+        
+        
+        self.listBox = Listbox(self.frameReceta)
+        self.listBox.grid(column=3, row=0)
+        self.scrollList = Scrollbar(self.frameReceta, command= self.listBox.yview)
+        self.scrollList.grid(column=4, row=0, sticky="nesw")
+        self.listBox.config(yscrollcommand=self.scrollList.set)
+        
+        self.listBox.insert(END,'ELEMENTO1')
+        self.listBox.insert(END,'ELEMENTO2')
+        self.listBox.insert(END,'ELEMENTO3')
+        self.listBox.insert(END,'ELEMENTO4')
+        self.listBox.insert(END,'ELEMENTO5')
+        self.listBox.insert(END,'ELEMENTO6')
+        self.listBox.insert(END,'ELEMENTO7')
+        self.listBox.insert(END,'ELEMENTO8')
+        self.listBox.insert(END,'ELEMENTO9')
+        self.listBox.insert(END,'ELEMENTO10')
+        self.listBox.insert(END,'ELEMENTO11')
+        self.listBox.insert(END,'ELEMENTO12')
+        self.listBox.insert(END,'ELEMENTO13')
+        self.listBox.insert(END,'ELEMENTO14')
+        self.listBox.insert(END,'ELEMENTO15')
+                
+        
+        
+        #FRAME CONTENEDOR
         
         self.contenedor1Nombre = StringVar()
         self.contenedor2Nombre = StringVar()
@@ -170,36 +266,41 @@ class FullScreenWindow:
 
 
         
-        self.frameAdmin = Frame(self.tk)
-        self.labelContenedor1 = Label(self.frameAdmin, text="Contenedor 1")
+        self.frameContenedor = Frame(self.tk)
+        self.labelContenedor1 = Label(self.frameContenedor, text="Contenedor 1")
         self.labelContenedor1.grid(column=0, row=1)
-        self.labelContenedor2 = Label(self.frameAdmin, text="Contenedor 2")
+        self.labelContenedor2 = Label(self.frameContenedor, text="Contenedor 2")
         self.labelContenedor2.grid(column=0, row=2)
-        self.labelContenedor3 = Label(self.frameAdmin, text="Contenedor 3")
+        self.labelContenedor3 = Label(self.frameContenedor, text="Contenedor 3")
         self.labelContenedor3.grid(column=0, row=3)
-        self.labelContenedor4 = Label(self.frameAdmin, text="Contenedor 4")
+        self.labelContenedor4 = Label(self.frameContenedor, text="Contenedor 4")
         self.labelContenedor4.grid(column=0, row=4)
-        self.labelContenedor5 = Label(self.frameAdmin, text="Contenedor 5")
+        self.labelContenedor5 = Label(self.frameContenedor, text="Contenedor 5")
         self.labelContenedor5.grid(column=0, row=5)
-        self.labelContenedor6 = Label(self.frameAdmin, text="Contenedor 6")
+        self.labelContenedor6 = Label(self.frameContenedor, text="Contenedor 6")
         self.labelContenedor6.grid(column=0, row=6)
-        self.TextBoxContenedor1=Entry(self.frameAdmin, textvariable= self.contenedor1Nombre)
+        self.TextBoxContenedor1=Entry(self.frameContenedor, textvariable= self.contenedor1Nombre)
         self.TextBoxContenedor1.grid(column=1,row=1)
-        self.TextBoxContenedor2=Entry(self.frameAdmin, textvariable= self.contenedor2Nombre)
+        self.TextBoxContenedor2=Entry(self.frameContenedor, textvariable= self.contenedor2Nombre)
         self.TextBoxContenedor2.grid(column=1,row=2)
-        self.TextBoxContenedor3=Entry(self.frameAdmin, textvariable= self.contenedor3Nombre)
+        self.TextBoxContenedor3=Entry(self.frameContenedor, textvariable= self.contenedor3Nombre)
         self.TextBoxContenedor3.grid(column=1,row=3)
-        self.TextBoxContenedor4=Entry(self.frameAdmin, textvariable= self.contenedor4Nombre)
+        self.TextBoxContenedor4=Entry(self.frameContenedor, textvariable= self.contenedor4Nombre)
         self.TextBoxContenedor4.grid(column=1,row=4)
-        self.TextBoxContenedor5=Entry(self.frameAdmin, textvariable= self.contenedor5Nombre)
+        self.TextBoxContenedor5=Entry(self.frameContenedor, textvariable= self.contenedor5Nombre)
         self.TextBoxContenedor5.grid(column=1,row=5)
-        self.TextBoxContenedor6=Entry(self.frameAdmin, textvariable= self.contenedor6Nombre)
+        self.TextBoxContenedor6=Entry(self.frameContenedor, textvariable= self.contenedor6Nombre)
         self.TextBoxContenedor6.grid(column=1,row=6)
-        self.btn4 = Button(self.frameAdmin, text="Guardar Cambios", command=self.ActualizarContenedores)
+        self.btn4 = Button(self.frameContenedor, text="Guardar Cambios", command=self.ActualizarContenedores)
         self.btn4.grid(column=2, row=7)
-        self.btn3 = Button(self.frameAdmin, text="Volver", command=self.AdminVolver)
+        self.btn3 = Button(self.frameContenedor, text="Volver", command=self.AdminVolver)
         self.btn3.grid(column=2, row=0)     
         self.TextBoxContenedor1.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        self.TextBoxContenedor2.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        self.TextBoxContenedor3.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        self.TextBoxContenedor4.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        self.TextBoxContenedor5.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        self.TextBoxContenedor6.bind("<FocusIn>", lambda x:self.AbrirTeclado())
         #~ self.hilo1.terminate()
 
     
