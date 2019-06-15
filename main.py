@@ -30,6 +30,36 @@ import threading
 
 
 
+class DatabaseManager:
+
+    def __init__(self):
+        connection = sqlite3.connect("DBSystem.sqlite3")
+        cursor = connection.cursor()
+    
+        cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255))")
+        connection.commit()
+        
+        cursor.execute("CREATE TABLE IF NOT EXISTS Recetas(RecetasId integer PRIMARY KEY AUTOINCREMENT, Nombre varchar(255))")
+        connection.commit()
+        
+        cursor.execute("CREATE TABLE IF NOT EXISTS IngredientesRecetas( IngredientesRecetasId integer PRIMARY KEY AUTOINCREMENT, ContenedorId integer, RecetaId integer, Cantidad integer, CONSTRAINT ContenedorFK FOREIGN KEY (ContenedorId) REFERENCES Contenedores(ContenedorId),CONSTRAINT RecetesFK FOREIGN KEY (RecetaId) REFERENCES Recetas(RecetaId) )")
+        connection.commit()
+        #------------------------------------------
+        cursor.execute("SELECT * FROM Contenedores")
+        contenedores = cursor.fetchall()
+        
+        if(len(contenedores) != 6):
+            cursor.execute("DELETE FROM Contenedores")   
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='Contenedores'")
+            initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
+
+            for info in initialInfo:
+                cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
+                connection.commit()
+            
+        connection.close()#FIN DE CONSTRUCTOR
+
+
 class FullScreenWindow:
         
     def TecladoVirtual(self):
@@ -67,30 +97,27 @@ class FullScreenWindow:
         self.labelBienvenida.pack_forget()
         connection = sqlite3.connect("DBSystem.sqlite3")
         cursor = connection.cursor()
-    
-        cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255))")
-        connection.commit()
         
         cursor.execute("SELECT * FROM Contenedores")
         contenedores = cursor.fetchall()
         
-        if(len(contenedores) != 6):
-            cursor.execute("TRUNCATE TABLE Contenedores")    
-            initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
+        #~ if(len(contenedores) != 6):
+            #~ cursor.execute("TRUNCATE TABLE Contenedores")    
+            #~ initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
 
-            for info in initialInfo:
-                cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
-                connection.commit()
-        else:
-            cursor.execute("SELECT * FROM Contenedores")
-            contenedores = cursor.fetchall()
-            print(contenedores)
-            self.contenedor1Nombre.set(contenedores[0][1])
-            self.contenedor2Nombre.set(contenedores[1][1])
-            self.contenedor3Nombre.set(contenedores[2][1])
-            self.contenedor4Nombre.set(contenedores[3][1])
-            self.contenedor5Nombre.set(contenedores[4][1])
-            self.contenedor6Nombre.set(contenedores[5][1])
+            #~ for info in initialInfo:
+                #~ cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
+                #~ connection.commit()
+        #~ else:
+        cursor.execute("SELECT * FROM Contenedores")
+        contenedores = cursor.fetchall()
+        print(contenedores)
+        self.contenedor1Nombre.set(contenedores[0][1])
+        self.contenedor2Nombre.set(contenedores[1][1])
+        self.contenedor3Nombre.set(contenedores[2][1])
+        self.contenedor4Nombre.set(contenedores[3][1])
+        self.contenedor5Nombre.set(contenedores[4][1])
+        self.contenedor6Nombre.set(contenedores[5][1])
             
         connection.close()
 
@@ -221,14 +248,21 @@ class FullScreenWindow:
         Receta        
         """
         
+        self.textoBotonCrearReceta = """Crear
+        Receta        
+        """
+        
         self.btnVerReceta = Button(self.frameReceta, text=self.textoBotonVerReceta, command=lambda:self.clicked("Ver /n Receta") , height = 5, width = 5)
         self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=lambda:self.clicked("Editar Receta") , height = 5, width = 5)
         self.btnEliminarReceta = Button(self.frameReceta, text=self.textoBotonEliminarReceta, command=lambda:self.clicked('Eliminar \n' + 'Receta') , height = 5, width = 5)
+        self.btnCrearReceta = Button(self.frameReceta, text=self.textoBotonCrearReceta, command=lambda:self.clicked('Crear Receta') , height = 5, width = 5)
         self.btnVolverAdmin = Button(self.frameReceta, text="Volver", command=self.AdminVolver)
         self.btnVerReceta.grid(column=0, row=0,padx=5)    
         self.btnEditarReceta.grid(column=1, row=0,padx=5)
         self.btnEliminarReceta.grid(column=2, row=0,padx=5)
         self.btnVolverAdmin.grid(column=3, row=1, pady=10)
+        self.btnCrearReceta.grid(column=0, row=1
+        , padx=5)
         
         
         self.listBox = Listbox(self.frameReceta)
@@ -332,6 +366,8 @@ def main(args):
         #~ cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
 
     #~ connection.commit()
+    
+    dbManager = DatabaseManager()
     
     root = FullScreenWindow()
 
