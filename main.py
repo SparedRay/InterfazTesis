@@ -25,40 +25,51 @@
 import sys
 import sqlite3
 from tkinter import *
+from tkinter import ttk
 import subprocess
 import threading
 
 
 
 class DatabaseManager:
+        
+        #RECORDAR DE AGREGAR FUNCIONALIDAD PARA EVITAR LA REPETICION DE NOMBRES DE LOS CONTENEDORES
 
     def __init__(self):
-        connection = sqlite3.connect("DBSystem.sqlite3")
-        cursor = connection.cursor()
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
     
-        cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255))")
-        connection.commit()
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255))")
+        self.connection.commit()
         
-        cursor.execute("CREATE TABLE IF NOT EXISTS Recetas(RecetasId integer PRIMARY KEY AUTOINCREMENT, Nombre varchar(255))")
-        connection.commit()
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS Recetas(RecetasId integer PRIMARY KEY AUTOINCREMENT, Nombre varchar(255))")
+        self.connection.commit()
         
-        cursor.execute("CREATE TABLE IF NOT EXISTS IngredientesRecetas( IngredientesRecetasId integer PRIMARY KEY AUTOINCREMENT, ContenedorId integer, RecetaId integer, Cantidad integer, CONSTRAINT ContenedorFK FOREIGN KEY (ContenedorId) REFERENCES Contenedores(ContenedorId),CONSTRAINT RecetesFK FOREIGN KEY (RecetaId) REFERENCES Recetas(RecetaId) )")
-        connection.commit()
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS IngredientesRecetas( IngredientesRecetasId integer PRIMARY KEY AUTOINCREMENT, ContenedorId integer, RecetaId integer, Cantidad integer, CONSTRAINT ContenedorFK FOREIGN KEY (ContenedorId) REFERENCES Contenedores(ContenedorId),CONSTRAINT RecetesFK FOREIGN KEY (RecetaId) REFERENCES Recetas(RecetaId) )")
+        self.connection.commit()
         #------------------------------------------
-        cursor.execute("SELECT * FROM Contenedores")
-        contenedores = cursor.fetchall()
+        self.cursor.execute("SELECT * FROM Contenedores")
+        contenedores = self.cursor.fetchall()
         
         if(len(contenedores) != 6):
-            cursor.execute("DELETE FROM Contenedores")   
-            cursor.execute("DELETE FROM sqlite_sequence WHERE name='Contenedores'")
+            self.cursor.execute("DELETE FROM Contenedores")   
+            self.cursor.execute("DELETE FROM sqlite_sequence WHERE name='Contenedores'")
             initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
 
             for info in initialInfo:
-                cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
-                connection.commit()
+                self.cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
+                self.connection.commit()
             
-        connection.close()#FIN DE CONSTRUCTOR
-
+        self.connection.close()#FIN DE CONSTRUCTOR
+    
+    def ObtenerIngredientes(self):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("SELECT * FROM Contenedores")
+        contenedores = self.cursor.fetchall()
+        print(contenedores)
+        self.connection.close()
+        return contenedores
 
 class FullScreenWindow:
         
@@ -90,8 +101,19 @@ class FullScreenWindow:
         
         self.frameAdmin.pack_forget()
         self.labelReceta.pack()
-        self.frameReceta.pack()
+        self.frameReceta.pack() 
+        #Se nos paso colocar fill=BOTH,expand=1
+        #por lo tanto este frame no sigue los estandares de diseño del resto
         
+    def RecetasCrearReceta(self):
+        self.labelReceta.pack_forget()
+        self.frameReceta.pack_forget()
+        self.labelRecetaCrear.pack()
+        self.frameRecetaCrear.pack(fill=BOTH,expand=1)
+        ingredientes = self.dbManager.ObtenerIngredientes()
+        self.diccionarioIngredientesCrear = { ingredientes[0][1] : ingredientes[0][0], ingredientes[1][1] : ingredientes[1][0], ingredientes[2][1] : ingredientes[2][0], ingredientes[3][1] : ingredientes[3][0], ingredientes[4][1] : ingredientes[4][0], ingredientes[5][1] : ingredientes[5][0] }
+        self.comboIngredientesCrear['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
+        self.comboIngredientesCrear.current(0)        
 
     def ContenedorVentana(self):
         self.labelBienvenida.pack_forget()
@@ -127,6 +149,13 @@ class FullScreenWindow:
             
             
 
+    def RecetasVolver(self): #para volver a recetas, colocar posteriormente los demas frames
+        self.labelRecetaCrear.pack_forget()
+        self.frameRecetaCrear.pack_forget()
+        self.labelReceta.pack()
+        self.frameReceta.pack(fill=BOTH,expand=1)
+        
+
     
     def AdminVolver(self):
     	self.frameContenedor.pack_forget()
@@ -158,9 +187,10 @@ class FullScreenWindow:
         
         
     def __init__(self):
+        self.dbManager = DatabaseManager()
         self.tk = Tk()
         self.tk.geometry("480x320")
-        self.tk.title("Soy un titulo")
+        self.tk.title("Sistema de Precisión Mixológica para la Preparación de Bebidas Alcohólicas")
         #~ self.tk.attributes("-zoomed", True)#PARA TRABAJAR EN LCD
         self.tk.attributes("-zoomed", False)#PARA TRABAJAR EN HDMI
         self.tk.attributes("-fullscreen", False)
@@ -247,7 +277,6 @@ class FullScreenWindow:
         self.textoBotonVerReceta = """Ver
         Receta        
         """
-        
         self.textoBotonCrearReceta = """Crear
         Receta        
         """
@@ -255,15 +284,13 @@ class FullScreenWindow:
         self.btnVerReceta = Button(self.frameReceta, text=self.textoBotonVerReceta, command=lambda:self.clicked("Ver /n Receta") , height = 5, width = 5)
         self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=lambda:self.clicked("Editar Receta") , height = 5, width = 5)
         self.btnEliminarReceta = Button(self.frameReceta, text=self.textoBotonEliminarReceta, command=lambda:self.clicked('Eliminar \n' + 'Receta') , height = 5, width = 5)
-        self.btnCrearReceta = Button(self.frameReceta, text=self.textoBotonCrearReceta, command=lambda:self.clicked('Crear Receta') , height = 5, width = 5)
+        self.btnCrearReceta = Button(self.frameReceta, text=self.textoBotonCrearReceta, command=self.RecetasCrearReceta , height = 5, width = 5)
         self.btnVolverAdmin = Button(self.frameReceta, text="Volver", command=self.AdminVolver)
         self.btnVerReceta.grid(column=0, row=0,padx=5)    
         self.btnEditarReceta.grid(column=1, row=0,padx=5)
         self.btnEliminarReceta.grid(column=2, row=0,padx=5)
         self.btnVolverAdmin.grid(column=3, row=1, pady=10)
-        self.btnCrearReceta.grid(column=0, row=1
-        , padx=5)
-        
+        self.btnCrearReceta.grid(column=0, row=1, padx=5)
         
         self.listBox = Listbox(self.frameReceta)
         self.listBox.grid(column=3, row=0)
@@ -277,15 +304,41 @@ class FullScreenWindow:
         self.listBox.insert(END,'ELEMENTO4')
         self.listBox.insert(END,'ELEMENTO5')
         self.listBox.insert(END,'ELEMENTO6')
-        self.listBox.insert(END,'ELEMENTO7')
-        self.listBox.insert(END,'ELEMENTO8')
-        self.listBox.insert(END,'ELEMENTO9')
-        self.listBox.insert(END,'ELEMENTO10')
-        self.listBox.insert(END,'ELEMENTO11')
-        self.listBox.insert(END,'ELEMENTO12')
-        self.listBox.insert(END,'ELEMENTO13')
-        self.listBox.insert(END,'ELEMENTO14')
-        self.listBox.insert(END,'ELEMENTO15')
+
+        
+        #FRAME RECETA-CREAR
+        
+        self.frameRecetaCrear = Frame(self.tk)
+        
+        self.labelRecetaCrear = Label(self.tk, text="Crear Receta")
+        self.labelRecetaCrear.configure (bg="#eaebf1")
+
+        self.frameRecetaCrear.configure (bg="#eaebf1")  
+        
+        self.labelIngredientesCrear = Label(self.frameRecetaCrear, text="Ingredientes")
+        self.labelCantidadCrear = Label(self.frameRecetaCrear, text="Cantidad")
+        self.labelRecetaActualCrear = Label(self.frameRecetaCrear, text="Receta Actual")
+        self.labelIngredientesCrear.configure (bg="#eaebf1")
+        self.labelCantidadCrear.configure (bg="#eaebf1")
+        self.labelRecetaActualCrear.configure (bg="#eaebf1")
+        
+        self.labelIngredientesCrear.grid(row=0,column=0,padx=5)
+        self.labelCantidadCrear.grid(row=0,column=1)
+        self.labelRecetaActualCrear.grid(row=0,column=2)
+        
+        self.comboIngredientesCrear = ttk.Combobox(self.frameRecetaCrear,width=16)
+        self.comboIngredientesCrear['values'] = (0,10,20,30,40,50,60,70,80,90,100)
+        self.comboIngredientesCrear.grid(row=1, column=0, padx=2,sticky=N)
+        self.comboIngredientesCrear.current(1)
+        
+        self.txtCantidadCrear = Entry(self.frameRecetaCrear, width=16)     
+        self.txtCantidadCrear.grid(row=1,column=1,padx=2,sticky=N)
+        
+        self.listBoxRecetaActualCrear = Listbox(self.frameRecetaCrear)
+        self.listBoxRecetaActualCrear.grid(row=1,column=2)
+        
+        self.btnVolverRecetaCrear = Button(self.frameRecetaCrear, text="Volver", command=self.RecetasVolver )
+        self.btnVolverRecetaCrear.grid(row=2,column=2)
                 
         
         
@@ -354,30 +407,12 @@ class FullScreenWindow:
         
 
 def main(args):
-    
-    #~ connection = sqlite3.connect("DBSystem.sqlite3")
-    #~ cursor = connection.cursor()
-    
-    #~ cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255))")
-    
-    #~ initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
-
-    #~ for info in initialInfo:
-        #~ cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
-
-    #~ connection.commit()
-    
-    dbManager = DatabaseManager()
-    
+        
     root = FullScreenWindow()
 
 
-    #~ connection.close()
     root.tk.mainloop()
 
-
-    
-    
 
 if __name__ == '__main__':
     import sys
