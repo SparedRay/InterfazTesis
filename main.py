@@ -27,6 +27,7 @@ import sqlite3
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+
 import subprocess
 import threading
 
@@ -47,6 +48,7 @@ class DatabaseManager:
         
         self.cursor.execute("CREATE TABLE IF NOT EXISTS IngredientesRecetas( IngredientesRecetasId integer PRIMARY KEY AUTOINCREMENT, ContenedorId integer, RecetaId integer, Cantidad integer, CONSTRAINT ContenedorFK FOREIGN KEY (ContenedorId) REFERENCES Contenedores(ContenedorId),CONSTRAINT RecetesFK FOREIGN KEY (RecetaId) REFERENCES Recetas(RecetaId) )")
         self.connection.commit()
+
         #------------------------------------------
         self.cursor.execute("SELECT * FROM Contenedores")
         contenedores = self.cursor.fetchall()
@@ -70,6 +72,31 @@ class DatabaseManager:
         print(contenedores)
         self.connection.close()
         return contenedores
+        
+    def CrearReceta(self,nombre):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("SELECT * FROM Recetas Where Nombre = '%s'" % nombre)
+        repetido = self.cursor.fetchall()
+        if len(repetido) != 0:
+            return False
+        self.cursor.execute("INSERT INTO Recetas(Nombre) VALUES ('%s')" % nombre)
+        self.connection.commit()
+        self.connection.close()
+        print(self.cursor.lastrowid)
+        return self.cursor.lastrowid 
+                #~ cursor.execute("SELECT * FROM Contenedores")
+        #~ contenedores = cursor.fetchall()
+
+
+    def AgregarIngrediente(self,dic,recetaId):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        for i in dic:
+            self.cursor.execute("INSERT INTO IngredientesRecetas(ContenedorId,RecetaId,Cantidad) VALUES (%s,%s,%s)" % (i,recetaId,dic[i]))
+            self.connection.commit()
+        self.connection.close()
+    
 
 class FullScreenWindow:
         
@@ -112,6 +139,8 @@ class FullScreenWindow:
         self.frameRecetaCrear.pack(fill=BOTH,expand=1)
         ingredientes = self.dbManager.ObtenerIngredientes()
         self.diccionarioIngredientesCrear = { ingredientes[0][1] : ingredientes[0][0], ingredientes[1][1] : ingredientes[1][0], ingredientes[2][1] : ingredientes[2][0], ingredientes[3][1] : ingredientes[3][0], ingredientes[4][1] : ingredientes[4][0], ingredientes[5][1] : ingredientes[5][0] }
+        print(self.diccionarioIngredientesCrear)
+        print("##### Arriba self.diccionarioIngredientesCrear #####")
         self.comboIngredientesCrear['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
         self.comboIngredientesCrear.current(0)    
         
@@ -184,13 +213,32 @@ class FullScreenWindow:
             return
         self.diccionarioIngredientes[ingrediente] = cantidad
         print(self.diccionarioIngredientes)
+        print("Arriba se mostro diccionarioIngredientes")
         self.MostrarIngredientes(self.listBoxRecetaActualCrear)
         
         
         
-    def AgregarReceta(self):
-            
-        return
+    def CrearReceta(self):
+        if len(self.diccionarioIngredientes) == 0:
+            messagebox.showerror("Error", "No se puede crear una receta sin ingredientes.")
+            return False
+        if len(self.txtRecetaNombreCrear.get()) == 0:
+            messagebox.showerror("Error", "Debe ingresar el nombre de la receta antes de continuar.")
+            return False
+        recetaId = self.dbManager.CrearReceta(self.txtRecetaNombreCrear.get()) #CREAMOS LA RECETA
+        if recetaId == False:
+            messagebox.showerror("Error", "Ya existe una receta con ese nombre.")
+            return False
+        dic = {} #DICCIONARIO PARA AGREGAR LOS INGREDIENTES DE LA RECETA
+        
+        for i in self.diccionarioIngredientes: #CICLO PARA RELLENAR DICCIONARIO
+            dic[ self.diccionarioIngredientesCrear[ i ] ] = self.diccionarioIngredientes[i]
+        print(dic)
+        print("Arriba impreso dic")
+        self.dbManager.AgregarIngrediente(dic,recetaId)
+        #~ self.diccionarioIngredientesCrear
+        messagebox.showinfo("Tarea Realizada", "La receta %s ha sido creada correctamente." % self.txtRecetaNombreCrear.get())
+        self.RecetasVolver()
             
 
     def RecetasVolver(self): #para volver a recetas, colocar posteriormente los demas frames
@@ -408,9 +456,13 @@ class FullScreenWindow:
         self.txtRecetaNombreCrear = Entry(self.frameRecetaCrear, width=16)
         self.txtCantidadCrear.grid(row=1,column=1,padx=2,sticky=N)
         self.txtRecetaNombreCrear.grid(row=3,column=0)
+        self.txtCantidadCrear.bind("<FocusIn>", lambda x:self.AbrirTeclado())
+        self.txtRecetaNombreCrear.bind("<FocusIn>", lambda x:self.AbrirTeclado())
         
         self.listBoxRecetaActualCrear = Listbox(self.frameRecetaCrear)
         self.listBoxRecetaActualCrear.grid(row=1,column=2)
+        
+
         
         #~ self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
         self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda x: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
@@ -420,6 +472,10 @@ class FullScreenWindow:
         #BOTON AGREGAR ------------------------------------------------------------
         self.btnAgregarRecetaCrear = Button(self.frameRecetaCrear, text="Agregar", command=self.AgregarIngrediente)
         self.btnAgregarRecetaCrear.grid(row=4,column=1)
+        #BOTON CREAR -------------------------------------------------------------------
+        self.btnCrearRecetaCrear = Button(self.frameRecetaCrear, text="Crear Receta", command=self.CrearReceta, width = 55)
+        #~ self.btnCrearRecetaCrear.configure(width=50)
+        self.btnCrearRecetaCrear.grid(row=5, column=0,columnspan=3,pady=8)
                 
                 
 #FRAME RECETA-EDITAR(EDITAR EN PROGRESO)
