@@ -158,11 +158,21 @@ class FullScreenWindow:
         self.frameContenedor.pack(fill=BOTH,expand=1)
             
     #CRUD RECETAS    
+    
+    def EliminarItemListbox(self,lista):
+        texto = lista.get(ACTIVE)
+        busqueda = texto.find(" " + chr(0),0,len(texto))
+        key = texto[:busqueda]
+        del self.diccionarioIngredientes[key]
+        print(self.diccionarioIngredientes)
+        lista.delete(ACTIVE)
+        #~ print(lista.curselection())
+    
     def MostrarIngredientes(self,lista):
         lista.delete(0,'end')
         for i in self.diccionarioIngredientes:
             #~ print i, d[i]
-             ingredientecantidad = i + "  " + self.diccionarioIngredientes[i]
+             ingredientecantidad = i + " " + chr(0) + " " + self.diccionarioIngredientes[i]
              print(ingredientecantidad)
              lista.insert('end',ingredientecantidad)
              
@@ -170,6 +180,8 @@ class FullScreenWindow:
     def AgregarIngrediente(self):
         ingrediente = self.comboIngredientesCrear.get()
         cantidad = self.txtCantidadCrear.get()
+        if len(cantidad) == 0:
+            return
         self.diccionarioIngredientes[ingrediente] = cantidad
         print(self.diccionarioIngredientes)
         self.MostrarIngredientes(self.listBoxRecetaActualCrear)
@@ -400,6 +412,9 @@ class FullScreenWindow:
         self.listBoxRecetaActualCrear = Listbox(self.frameRecetaCrear)
         self.listBoxRecetaActualCrear.grid(row=1,column=2)
         
+        #~ self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
+        self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda x: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
+        #~ command=lambda:self.clicked('Eliminar \n' + 'Receta')
         self.btnVolverRecetaCrear = Button(self.frameRecetaCrear, text="Volver", command=self.RecetasVolver )
         self.btnVolverRecetaCrear.grid(row=4,column=2)
         #BOTON AGREGAR ------------------------------------------------------------
