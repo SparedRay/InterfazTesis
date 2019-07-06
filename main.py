@@ -46,7 +46,7 @@ class DatabaseManager:
         self.cursor.execute("CREATE TABLE IF NOT EXISTS Recetas(RecetasId integer PRIMARY KEY AUTOINCREMENT, Nombre varchar(255))")
         self.connection.commit()
         
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS IngredientesRecetas( IngredientesRecetasId integer PRIMARY KEY AUTOINCREMENT, ContenedorId integer, RecetaId integer, Cantidad integer, CONSTRAINT ContenedorFK FOREIGN KEY (ContenedorId) REFERENCES Contenedores(ContenedorId),CONSTRAINT RecetesFK FOREIGN KEY (RecetaId) REFERENCES Recetas(RecetaId) )")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS IngredientesRecetas( IngredientesRecetasId integer PRIMARY KEY AUTOINCREMENT, ContenedorId integer, RecetaId integer, Cantidad integer, CONSTRAINT ContenedorFK FOREIGN KEY (ContenedorId) REFERENCES Contenedores(ContenedorId),CONSTRAINT RecetesFK FOREIGN KEY (RecetaId) REFERENCES Recetas(RecetaId) ON DELETE CASCADE)")
         self.connection.commit()
 
         #------------------------------------------
@@ -64,6 +64,15 @@ class DatabaseManager:
             
         self.connection.close()#FIN DE CONSTRUCTOR
     
+    def EliminarReceta(self,id):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        print("DELETE FROM Recetas WHERE RecetasId=%s" % id)
+        self.cursor.execute("DELETE FROM Recetas WHERE RecetasId=%s" % id)
+        self.cursor.execute("DELETE FROM IngredientesRecetas WHERE RecetaId=%s" % id)
+        self.connection.commit()
+        self.connection.close()
+    
     def ObtenerIngredientes(self):
         self.connection = sqlite3.connect("DBSystem.sqlite3")
         self.cursor = self.connection.cursor()
@@ -73,10 +82,47 @@ class DatabaseManager:
         self.connection.close()
         return contenedores
         
+    def VerReceta(self,id):
+        dic = {}
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("SELECT Nombre FROM Recetas WHERE RecetasId = %s" % id)
+        nombre = self.cursor.fetchall()
+        ######### AQUI TENEMOS EL NOMBRE DE LA RECETA########
+        self.cursor.execute("SELECT Contenedores.Nombre, IngredientesRecetas.Cantidad FROM IngredientesRecetas INNER JOIN Contenedores ON IngredientesRecetas.ContenedorId = Contenedores.ContenedorId WHERE IngredientesRecetas.RecetaId=%s" % id)
+        ingredientes = self.cursor.fetchall()
+        ##### AQUI TENEMOS LOS INGREDIENTES #####
+        dic["Receta"] = nombre[0][0]
+        dic["Ingredientes"] = ingredientes
+        return dic
+        
+    def ObtenerRecetas(self):
+        dic = {}
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("SELECT * FROM Recetas ORDER BY Nombre ASC")
+        recetas = self.cursor.fetchall()
+        for id, nombre in recetas:
+            dic[nombre] = id
+        self.connection.close()
+        return dic
+        
+    def VerificarNombreEditar(self,id,nombre):  
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        print(id)
+        print(nombre)
+        self.cursor.execute("SELECT * FROM Recetas WHERE Nombre = '%s' AND RecetasId != %s" % (nombre,id))
+        #~ self.cursor.execute("SELECT * FROM Recetas WHERE Nombre = '" + nombre + "' AND RecetasId != " + str(id))
+        repetido = self.cursor.fetchall()
+        if len(repetido) != 0:
+            return False
+        else:
+            return True
     def CrearReceta(self,nombre):
         self.connection = sqlite3.connect("DBSystem.sqlite3")
         self.cursor = self.connection.cursor()
-        self.cursor.execute("SELECT * FROM Recetas Where Nombre = '%s'" % nombre)
+        self.cursor.execute("SELECT * FROM Recetas WHERE Nombre = '%s'" % nombre)
         repetido = self.cursor.fetchall()
         if len(repetido) != 0:
             return False
@@ -85,8 +131,22 @@ class DatabaseManager:
         self.connection.close()
         print(self.cursor.lastrowid)
         return self.cursor.lastrowid 
-                #~ cursor.execute("SELECT * FROM Contenedores")
-        #~ contenedores = cursor.fetchall()
+        
+    def ActualizarNombreReceta(self,nombre,id):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        print(nombre)
+        print(id)
+        self.cursor.execute("UPDATE Recetas SET Nombre = '%s' WHERE RecetasId = %s" % (nombre,id))
+        self.connection.commit()        
+        self.connection.close()           
+        
+    def EliminarTodosIngredientes(self,id):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("DELETE FROM IngredientesRecetas WHERE RecetaId = %s" % id)
+        self.connection.commit()        
+        self.connection.close()
 
 
     def AgregarIngrediente(self,dic,recetaId):
@@ -123,9 +183,15 @@ class FullScreenWindow:
         self.labelAdmin.pack()
         self.frameAdmin.pack(fill=BOTH,expand=1)
 
+    def LogicaListaGeneral(self):
+        self.listboxRecetasGeneral.delete(0,'end')
+        self.diccionarioListaGeneral = self.dbManager.ObtenerRecetas()    
+        for i in self.diccionarioListaGeneral:
+            self.listboxRecetasGeneral.insert(END,i)            
+
     def RecetasVentana(self):
-        self.labelAdmin.pack_forget()                                                                                                                                                                                                                                   
-        
+        self.LogicaListaGeneral()
+        self.labelAdmin.pack_forget()                                                                                                                                                                                                                                           
         self.frameAdmin.pack_forget()
         self.labelReceta.pack()
         self.frameReceta.pack() 
@@ -144,15 +210,26 @@ class FullScreenWindow:
         self.comboIngredientesCrear['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
         self.comboIngredientesCrear.current(0)    
         
-    def RecetasEditarReceta(self):
+    def RecetasEditarReceta(self,id):
+        self.RecetaId = id
+        temp = self.dbManager.VerReceta(id)
+        #~ self.diccionarioIngredientes 
+        self.txtRecetaNombreEditar.delete(0, END)
+        self.txtRecetaNombreEditar.insert(0, temp["Receta"])
+        for nombre, cantidad in temp["Ingredientes"]:
+            self.diccionarioIngredientes[nombre] = cantidad
+        self.MostrarIngredientes(self.listBoxRecetaActualEditar)
+        print(self.diccionarioIngredientes)
+        #~ mEntry.delete(0, END) #deletes the current value
+        #~ mEntry.insert(0, res)
         self.labelReceta.pack_forget()
         self.frameReceta.pack_forget()
         self.labelRecetaEditar.pack()
         self.frameRecetaEditar.pack(fill=BOTH,expand=1)
         ingredientes = self.dbManager.ObtenerIngredientes()
         self.diccionarioIngredientesCrear = { ingredientes[0][1] : ingredientes[0][0], ingredientes[1][1] : ingredientes[1][0], ingredientes[2][1] : ingredientes[2][0], ingredientes[3][1] : ingredientes[3][0], ingredientes[4][1] : ingredientes[4][0], ingredientes[5][1] : ingredientes[5][0] }
-        self.comboIngredientesCrear['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
-        self.comboIngredientesCrear.current(0)  
+        self.comboIngredientesEditar['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
+        self.comboIngredientesEditar.current(0)  
 
     def ContenedorVentana(self):
         self.labelBienvenida.pack_forget()
@@ -197,26 +274,62 @@ class FullScreenWindow:
         lista.delete(ACTIVE)
         #~ print(lista.curselection())
     
+    def EliminarReceta(self):
+        receta = self.listboxRecetasGeneral.get(ACTIVE)
+        id = self.diccionarioListaGeneral[receta]
+        self.dbManager.EliminarReceta(id)
+        self.diccionarioListaGeneral = {}
+        self.LogicaListaGeneral()
+        
     def MostrarIngredientes(self,lista):
         lista.delete(0,'end')
         for i in self.diccionarioIngredientes:
             #~ print i, d[i]
-             ingredientecantidad = i + " " + chr(0) + " " + self.diccionarioIngredientes[i]
+             ingredientecantidad = i + " " + chr(0) + " " + str(self.diccionarioIngredientes[i])
              print(ingredientecantidad)
              lista.insert('end',ingredientecantidad)
-             
     
-    def AgregarIngrediente(self):
-        ingrediente = self.comboIngredientesCrear.get()
-        cantidad = self.txtCantidadCrear.get()
+    def AgregarIngrediente(self,ingrediente,cantidad,lista):
+
         if len(cantidad) == 0:
             return
         self.diccionarioIngredientes[ingrediente] = cantidad
         print(self.diccionarioIngredientes)
         print("Arriba se mostro diccionarioIngredientes")
-        self.MostrarIngredientes(self.listBoxRecetaActualCrear)
+        self.MostrarIngredientes(lista)
         
+    def EditarReceta(self):
+        if len(self.diccionarioIngredientes) == 0:
+            messagebox.showerror("Error", "No se puede crear una receta sin ingredientes.")
+            return False
+        if len(self.txtRecetaNombreEditar.get()) == 0:
+            messagebox.showerror("Error", "Debe ingresar el nombre de la receta antes de continuar.")
+            return False
+        if self.dbManager.VerificarNombreEditar(self.RecetaId,self.txtRecetaNombreEditar.get()) == False:
+            messagebox.showerror("Error", "Ya existe una receta con ese nombre.")
+            return False 
+        self.dbManager.ActualizarNombreReceta(self.txtRecetaNombreEditar.get(),self.RecetaId)
+        self.dbManager.EliminarTodosIngredientes(self.RecetaId)
         
+        dicc = {} #DICCIONARIO PARA AGREGAR LOS INGREDIENTES DE LA RECETA
+        print(self.diccionarioIngredientesCrear)
+        print("##############################")
+        for i in self.diccionarioIngredientes: #CICLO PARA RELLENAR DICCIONARIO
+            print(i)
+            print("########################")
+            dicc[ self.diccionarioIngredientesCrear[ i ] ] = self.diccionarioIngredientes[i]
+        print(dicc)
+        print("Arriba impreso dicc")
+        self.dbManager.AgregarIngrediente(dicc,self.RecetaId)
+        messagebox.showinfo("Tarea Realizada", "La receta %s ha sido actualizada correctamente." % self.txtRecetaNombreEditar.get())
+        self.diccionarioIngredientes = {}
+        self.txtCantidadEditar.config(validate="none")
+        self.txtCantidadEditar.delete(0, END)
+        self.txtRecetaNombreEditar.delete(0, END)
+        self.listBoxRecetaActualEditar.delete(0, 'end')
+        self.txtCantidadEditar.config(validate='key')
+        self.RecetasVolver(False)
+        return
         
     def CrearReceta(self):
         if len(self.diccionarioIngredientes) == 0:
@@ -238,12 +351,24 @@ class FullScreenWindow:
         self.dbManager.AgregarIngrediente(dic,recetaId)
         #~ self.diccionarioIngredientesCrear
         messagebox.showinfo("Tarea Realizada", "La receta %s ha sido creada correctamente." % self.txtRecetaNombreCrear.get())
-        self.RecetasVolver()
-            
+        self.diccionarioIngredientes = {}
+        self.txtCantidadCrear.config(validate="none")
+        self.txtCantidadCrear.delete(0, END)
+        self.txtRecetaNombreCrear.delete(0, END)
+        self.listBoxRecetaActualCrear.delete(0, 'end')
+        self.txtCantidadCrear.config(validate='key')
+        self.RecetasVolver(True)
 
-    def RecetasVolver(self): #para volver a recetas, colocar posteriormente los demas frames
-        self.labelRecetaCrear.pack_forget()
-        self.frameRecetaCrear.pack_forget()
+
+    def RecetasVolver(self,crear): #para volver a recetas, colocar posteriormente los demas frames
+        self.LogicaListaGeneral()
+        if crear:
+            self.labelRecetaCrear.pack_forget()
+            self.frameRecetaCrear.pack_forget()
+        else:
+            self.diccionarioIngredientes = {}
+            self.labelRecetaEditar.pack_forget()
+            self.frameRecetaEditar.pack_forget()
         self.labelReceta.pack()
         self.frameReceta.pack(fill=BOTH,expand=1)
         
@@ -300,6 +425,7 @@ class FullScreenWindow:
         
     def __init__(self):
         self.dbManager = DatabaseManager()
+        
         self.tk = Tk()
         self.tk.geometry("480x320")
         self.tk.title("Sistema de Precisión Mixológica para la Preparación de Bebidas Alcohólicas")
@@ -318,38 +444,13 @@ class FullScreenWindow:
         self.framePrincipal.configure (bg="#eaebf1")
         self.framePrincipal.pack(fill=BOTH,expand=1)
         
-        
-        
-        
         self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 5, width = 10)
         self.btn2 = Button(self.framePrincipal, text="User", command=lambda:self.clicked("User") , height = 5, width = 10)
         self.btn1.grid(column=0, row=0, padx=80, pady=40)
         self.btn2.grid(column=1, row=0, padx=10, pady=40)
-        #~ self.btn1.pack(side= LEFT)
-        #~ self.btn2.pack(side= RIGHT)
         self.btn1.configure (bg="#f1f0ea")
         self.btn2.configure (bg="#f1f0ea")
-        #~ self.listBox = Listbox(self.framePrincipal)
-        #~ self.listBox.grid(column=2, row=1)
-        #~ self.scrollList = Scrollbar(self.framePrincipal, command= self.listBox.yview)
-        #~ self.scrollList.grid(column=3, row=1, sticky="nesw")
-        #~ self.listBox.config(yscrollcommand=self.scrollList.set)
-        
-        #~ self.listBox.insert(END,'ELEMENTO1')
-        #~ self.listBox.insert(END,'ELEMENTO2')
-        #~ self.listBox.insert(END,'ELEMENTO3')
-        #~ self.listBox.insert(END,'ELEMENTO4')
-        #~ self.listBox.insert(END,'ELEMENTO5')
-        #~ self.listBox.insert(END,'ELEMENTO6')
-        #~ self.listBox.insert(END,'ELEMENTO7')
-        #~ self.listBox.insert(END,'ELEMENTO8')
-        #~ self.listBox.insert(END,'ELEMENTO9')
-        #~ self.listBox.insert(END,'ELEMENTO10')
-        #~ self.listBox.insert(END,'ELEMENTO11')
-        #~ self.listBox.insert(END,'ELEMENTO12')
-        #~ self.listBox.insert(END,'ELEMENTO13')
-        #~ self.listBox.insert(END,'ELEMENTO14')
-        #~ self.listBox.insert(END,'ELEMENTO15')
+
         self.state = False
         self.tk.bind("<F11>", self.toggle_fullscreen)
         self.tk.bind("<Escape>", self.end_fullscreen)   
@@ -374,6 +475,7 @@ class FullScreenWindow:
         #FRAME RECETA
         
         self.frameReceta = Frame(self.tk)
+        self.listboxRecetasGeneral = Listbox(self.frameReceta)
         
         self.labelReceta = Label(self.tk, text="Recetas")
         self.labelReceta.configure (bg="#eaebf1")
@@ -394,8 +496,8 @@ class FullScreenWindow:
         """
         
         self.btnVerReceta = Button(self.frameReceta, text=self.textoBotonVerReceta, command=lambda:self.clicked("Ver /n Receta") , height = 5, width = 5)
-        self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=self.RecetasEditarReceta , height = 5, width = 5)
-        self.btnEliminarReceta = Button(self.frameReceta, text=self.textoBotonEliminarReceta, command=lambda:self.clicked('Eliminar \n' + 'Receta') , height = 5, width = 5)
+        self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=lambda:self.RecetasEditarReceta(self.diccionarioListaGeneral[self.listboxRecetasGeneral.get(ACTIVE)]) , height = 5, width = 5)
+        self.btnEliminarReceta = Button(self.frameReceta, text=self.textoBotonEliminarReceta, command=self.EliminarReceta , height = 5, width = 5)
         self.btnCrearReceta = Button(self.frameReceta, text=self.textoBotonCrearReceta, command=self.RecetasCrearReceta , height = 5, width = 5)
         self.btnVolverAdmin = Button(self.frameReceta, text="Volver", command=self.AdminVolver)
         self.btnVerReceta.grid(column=0, row=0,padx=5)    
@@ -404,19 +506,13 @@ class FullScreenWindow:
         self.btnVolverAdmin.grid(column=3, row=1, pady=10)
         self.btnCrearReceta.grid(column=0, row=1, padx=5)
         
-        self.listBox = Listbox(self.frameReceta)
-        self.listBox.grid(column=3, row=0)
-        self.scrollList = Scrollbar(self.frameReceta, command= self.listBox.yview)
-        self.scrollList.grid(column=4, row=0, sticky="nesw")
-        self.listBox.config(yscrollcommand=self.scrollList.set)
         
-        self.listBox.insert(END,'ELEMENTO1')
-        self.listBox.insert(END,'ELEMENTO2')
-        self.listBox.insert(END,'ELEMENTO3')
-        self.listBox.insert(END,'ELEMENTO4')
-        self.listBox.insert(END,'ELEMENTO5')
-        self.listBox.insert(END,'ELEMENTO6')
-
+        self.listboxRecetasGeneral.grid(column=3, row=0)
+        self.scrollList = Scrollbar(self.frameReceta, command= self.listboxRecetasGeneral.yview)
+        self.scrollList.grid(column=4, row=0, sticky="nesw")
+        self.listboxRecetasGeneral.config(yscrollcommand=self.scrollList.set)
+        
+        #~ self.listBox.insert(END,'ELEMENTO1')
         
         #FRAME RECETA-CREAR
         
@@ -445,9 +541,8 @@ class FullScreenWindow:
         self.labelRecetaNombreCrear.grid(row=2,column=0)
         
         self.comboIngredientesCrear = ttk.Combobox(self.frameRecetaCrear,width=16, state="readonly" )
-        self.comboIngredientesCrear['values'] = (0,10,20,30,40,50,60,70,80,90,100)
         self.comboIngredientesCrear.grid(row=1, column=0, padx=2,sticky=N)
-        self.comboIngredientesCrear.current(1)
+        
         
         self.vcmd = (self.tk.register(self.validate),
                 '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
@@ -459,7 +554,7 @@ class FullScreenWindow:
         self.txtCantidadCrear.bind("<FocusIn>", lambda x:self.AbrirTeclado())
         self.txtRecetaNombreCrear.bind("<FocusIn>", lambda x:self.AbrirTeclado())
         
-        self.listBoxRecetaActualCrear = Listbox(self.frameRecetaCrear)
+        self.listBoxRecetaActualCrear = Listbox(self.frameRecetaCrear, height=6)
         self.listBoxRecetaActualCrear.grid(row=1,column=2)
         
 
@@ -467,14 +562,13 @@ class FullScreenWindow:
         #~ self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
         self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda x: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
         #~ command=lambda:self.clicked('Eliminar \n' + 'Receta')
-        self.btnVolverRecetaCrear = Button(self.frameRecetaCrear, text="Volver", command=self.RecetasVolver )
+        self.btnVolverRecetaCrear = Button(self.frameRecetaCrear, text="Volver", command=lambda:self.RecetasVolver(True) )
         self.btnVolverRecetaCrear.grid(row=4,column=2)
         #BOTON AGREGAR ------------------------------------------------------------
-        self.btnAgregarRecetaCrear = Button(self.frameRecetaCrear, text="Agregar", command=self.AgregarIngrediente)
+        self.btnAgregarRecetaCrear = Button(self.frameRecetaCrear, text="Agregar", command=lambda:self.AgregarIngrediente(self.comboIngredientesCrear.get(),self.txtCantidadCrear.get(),self.listBoxRecetaActualCrear))
         self.btnAgregarRecetaCrear.grid(row=4,column=1)
         #BOTON CREAR -------------------------------------------------------------------
         self.btnCrearRecetaCrear = Button(self.frameRecetaCrear, text="Crear Receta", command=self.CrearReceta, width = 55)
-        #~ self.btnCrearRecetaCrear.configure(width=50)
         self.btnCrearRecetaCrear.grid(row=5, column=0,columnspan=3,pady=8)
                 
                 
@@ -504,9 +598,8 @@ class FullScreenWindow:
         self.labelRecetaNombreEditar.grid(row=2,column=0)
         
         self.comboIngredientesEditar = ttk.Combobox(self.frameRecetaEditar,width=16, state="readonly" )
-        self.comboIngredientesEditar['values'] = (0,10,20,30,40,50,60,70,80,90,100)
         self.comboIngredientesEditar.grid(row=1, column=0, padx=2,sticky=N)
-        self.comboIngredientesEditar.current(1)
+        
         
         
         self.txtCantidadEditar = Entry(self.frameRecetaEditar, width=16, validate = 'key', validatecommand = self.vcmd)     
@@ -517,11 +610,16 @@ class FullScreenWindow:
         self.listBoxRecetaActualEditar = Listbox(self.frameRecetaEditar)
         self.listBoxRecetaActualEditar.grid(row=1,column=2)
         
-        self.btnVolverRecetaEditar = Button(self.frameRecetaEditar, text="Volver", command=self.RecetasVolver )
+        self.btnVolverRecetaEditar = Button(self.frameRecetaEditar, text="Volver", command=lambda:self.RecetasVolver(False) )
         self.btnVolverRecetaEditar.grid(row=4,column=2)
+        
+        self.listBoxRecetaActualEditar.bind("<Double-Button-1>", lambda x: self.EliminarItemListbox(self.listBoxRecetaActualEditar))
         #BOTON AGREGAR ------------------------------------------------------------
-        self.btnAgregarRecetaEditar = Button(self.frameRecetaEditar, text="Agregar", command=self.AgregarIngrediente)
+        self.btnAgregarRecetaEditar = Button(self.frameRecetaEditar, text="Agregar", command=lambda:self.AgregarIngrediente(self.comboIngredientesEditar.get(),self.txtCantidadEditar.get(),self.listBoxRecetaActualEditar))
         self.btnAgregarRecetaEditar.grid(row=4,column=1)
+        #BOTON CREAR -------------------------------------------------------------------
+        self.btnEditarRecetaEditar = Button(self.frameRecetaEditar, text="Editar Receta", command=self.EditarReceta, width = 55)
+        self.btnEditarRecetaEditar.grid(row=5, column=0,columnspan=3,pady=8)
                         
         
         #FRAME CONTENEDOR
