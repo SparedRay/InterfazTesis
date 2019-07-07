@@ -182,15 +182,33 @@ class FullScreenWindow:
         self.framePrincipal.pack_forget()
         self.labelAdmin.pack()
         self.frameAdmin.pack(fill=BOTH,expand=1)
+        
+    def UserVentana(self):
+        self.LogicaListaGeneral(self.listboxBebidasDisponibles)
+        self.labelBienvenida.pack_forget()
+        self.framePrincipal.pack_forget()
+        
+        self.labelUser.pack()
+        self.frameUser.pack(fill=BOTH,expand=1)
+        
+        self.listboxIngredientes.delete(0, END)
+        receta = self.listboxBebidasDisponibles.get(ACTIVE)
+        id = self.diccionarioListaGeneral[receta]
+        temp = self.dbManager.VerReceta(id)
+        for nombre, cantidad in temp["Ingredientes"]:
+            self.diccionarioIngredientes[nombre] = cantidad
+        self.MostrarIngredientes(self.listboxIngredientes)
+        self.diccionarioIngredientes = {}
 
-    def LogicaListaGeneral(self):
+    def LogicaListaGeneral(self,lista):
         self.listboxRecetasGeneral.delete(0,'end')
         self.diccionarioListaGeneral = self.dbManager.ObtenerRecetas()    
+        print(self.diccionarioListaGeneral)
         for i in self.diccionarioListaGeneral:
-            self.listboxRecetasGeneral.insert(END,i)            
+            lista.insert(END,i)            
 
     def RecetasVentana(self):
-        self.LogicaListaGeneral()
+        self.LogicaListaGeneral(self.listboxRecetasGeneral)
         self.labelAdmin.pack_forget()                                                                                                                                                                                                                                           
         self.frameAdmin.pack_forget()
         self.labelReceta.pack()
@@ -198,7 +216,7 @@ class FullScreenWindow:
         #Se nos paso colocar fill=BOTH,expand=1
         #por lo tanto este frame no sigue los estandares de diseño del resto
         
-    def RecetasCrearReceta(self):  #MEJORAR LOGICA PARA EVITAR USAR 2 DICCIONARIOS PARA CREAR Y EDITAR
+    def RecetasCrearReceta(self):  
         self.labelReceta.pack_forget()
         self.frameReceta.pack_forget()
         self.labelRecetaCrear.pack()
@@ -262,7 +280,18 @@ class FullScreenWindow:
         self.frameAdmin.pack_forget()
         self.labelAdmin.pack_forget()
         self.frameContenedor.pack(fill=BOTH,expand=1)
-            
+
+    def VerReceta(self,id):
+        temp = self.dbManager.VerReceta(id)
+        for nombre, cantidad in temp["Ingredientes"]:
+            self.diccionarioIngredientes[nombre] = cantidad
+        self.MostrarIngredientes(self.listBoxRecetaVer)
+        self.textoLabelVer.set(temp["Receta"])
+        self.labelReceta.pack_forget()
+        self.frameReceta.pack_forget()
+        self.labelRecetaVer.pack()
+        self.frameRecetaVer.pack(fill=BOTH,expand=1)
+                    
     #CRUD RECETAS    
     
     def EliminarItemListbox(self,lista):
@@ -272,22 +301,34 @@ class FullScreenWindow:
         del self.diccionarioIngredientes[key]
         print(self.diccionarioIngredientes)
         lista.delete(ACTIVE)
-        #~ print(lista.curselection())
+        
     
     def EliminarReceta(self):
         receta = self.listboxRecetasGeneral.get(ACTIVE)
         id = self.diccionarioListaGeneral[receta]
         self.dbManager.EliminarReceta(id)
         self.diccionarioListaGeneral = {}
-        self.LogicaListaGeneral()
+        self.LogicaListaGeneral(self.listboxRecetasGeneral)
+        
+    def VerBebida(self,lista):
+        lista.delete(0, END)
+        receta = self.listboxBebidasDisponibles.get(ACTIVE)
+        id = self.diccionarioListaGeneral[receta]
+        temp = self.dbManager.VerReceta(id)
+        for nombre, cantidad in temp["Ingredientes"]:
+            self.diccionarioIngredientes[nombre] = cantidad
+        self.MostrarIngredientes(lista)
+        self.diccionarioIngredientes = {}
+        return
+        
+
         
     def MostrarIngredientes(self,lista):
         lista.delete(0,'end')
         for i in self.diccionarioIngredientes:
-            #~ print i, d[i]
-             ingredientecantidad = i + " " + chr(0) + " " + str(self.diccionarioIngredientes[i])
-             print(ingredientecantidad)
-             lista.insert('end',ingredientecantidad)
+            ingredientecantidad = i + " " + chr(0) + " " + str(self.diccionarioIngredientes[i])
+            print(ingredientecantidad)
+            lista.insert('end',ingredientecantidad)
     
     def AgregarIngrediente(self,ingrediente,cantidad,lista):
 
@@ -359,16 +400,18 @@ class FullScreenWindow:
         self.txtCantidadCrear.config(validate='key')
         self.RecetasVolver(True)
 
-
-    def RecetasVolver(self,crear): #para volver a recetas, colocar posteriormente los demas frames
-        self.LogicaListaGeneral()
-        if crear:
+    def RecetasVolver(self,i): 
+        self.LogicaListaGeneral(self.listboxRecetasGeneral)
+        self.diccionarioIngredientes = {}
+        if i == 1:
             self.labelRecetaCrear.pack_forget()
             self.frameRecetaCrear.pack_forget()
-        else:
-            self.diccionarioIngredientes = {}
+        elif i == 2:
             self.labelRecetaEditar.pack_forget()
             self.frameRecetaEditar.pack_forget()
+        else:
+            self.labelRecetaVer.pack_forget()
+            self.frameRecetaVer.pack_forget()
         self.labelReceta.pack()
         self.frameReceta.pack(fill=BOTH,expand=1)
         
@@ -378,15 +421,17 @@ class FullScreenWindow:
     	self.frameContenedor.pack_forget()
     	self.frameReceta.pack_forget()
     	self.labelReceta.pack_forget()
-        
-    	#~ self.labelBienvenida = Label(self.tk, text="Bienvenido")
-    	#~ self.labelBienvenida.configure(bg="#eaebf1")
+
     	self.labelAdmin.pack()
     	self.frameAdmin.pack(fill=BOTH,expand=1)
         
-    def PrincipalVolver(self):
-        self.frameAdmin.pack_forget()
-        self.labelAdmin.pack_forget()
+    def PrincipalVolver(self,isAdmin):
+        if isAdmin:
+            self.frameAdmin.pack_forget()
+            self.labelAdmin.pack_forget()
+        else:
+            self.frameUser.pack_forget()
+            self.labelUser.pack_forget()    
         self.labelBienvenida.pack()
         self.framePrincipal.pack(fill=BOTH,expand=1)
 
@@ -410,7 +455,26 @@ class FullScreenWindow:
             print("iguales")
             messagebox.showerror("Error", "NO pueden existir dos ingredientes con el mismo nombre")
             return
-        
+     
+    def AgregarBebidaPedido(self):
+        self.diccionarioPedido[ self.listboxBebidasDisponibles.get(ACTIVE) ] = self.txtCantidadBebidas.get()
+        print(self.diccionarioPedido)
+        print(self.txtCantidadBebidas.get())
+        #~ self.listboxPedido.delete(0,'end')
+        self.listboxPedido.delete(0, END)
+        for i in self.diccionarioPedido:
+            print(i)
+            self.listboxPedido.insert(END, i + " " + chr(0) + " " + self.diccionarioPedido[i] )
+        return
+
+    def EliminarItemPedido(self):
+        texto = self.listboxPedido.get(ACTIVE)
+        busqueda = texto.find(" "  + chr(0),0,len(texto))
+        key = texto[:busqueda]
+        del self.diccionarioPedido[key]
+        self.listboxPedido.delete(ACTIVE)
+        return
+
     def validate(self, action, index, value_if_allowed,
                        prior_value, text, validation_type, trigger_type, widget_name):
         if text in '0123456789.-+':
@@ -445,7 +509,7 @@ class FullScreenWindow:
         self.framePrincipal.pack(fill=BOTH,expand=1)
         
         self.btn1 = Button(self.framePrincipal, text="Admin", command=self.AdminVentana , height = 5, width = 10)
-        self.btn2 = Button(self.framePrincipal, text="User", command=lambda:self.clicked("User") , height = 5, width = 10)
+        self.btn2 = Button(self.framePrincipal, text="User", command=self.UserVentana , height = 5, width = 10)
         self.btn1.grid(column=0, row=0, padx=80, pady=40)
         self.btn2.grid(column=1, row=0, padx=10, pady=40)
         self.btn1.configure (bg="#f1f0ea")
@@ -454,6 +518,52 @@ class FullScreenWindow:
         self.state = False
         self.tk.bind("<F11>", self.toggle_fullscreen)
         self.tk.bind("<Escape>", self.end_fullscreen)   
+        
+        #FRAME USUARIO
+        self.diccionarioPedido = {} # { "Nombre de bebida unico" : cantidad de bebida  }
+        
+        self.frameUser = Frame(self.tk)
+        self.frameUser.configure(bg="#eaebf1")
+        self.labelUser = Label(self.tk, text="Realiza tu pedido")
+        self.labelUser.configure(bg="#eaebf1")
+        self.labelBebidasDisponibles = Label(self.frameUser, text="Bebidas Disponibles")
+        self.labelBebidasDisponibles.grid(row=0,column=0)
+        self.labelBebidasDisponibles.configure (bg="#eaebf1")
+        self.listboxBebidasDisponibles = Listbox(self.frameUser, height=6, width=18)
+        self.listboxBebidasDisponibles.grid(row=1,column=0)
+        self.scrollList = Scrollbar(self.frameUser, command= self.listboxBebidasDisponibles.yview)
+        self.scrollList.grid(row=1,column=1, sticky="nesw")
+        self.listboxBebidasDisponibles.config(yscrollcommand=self.scrollList.set)
+        self.labelIngredientes = Label(self.frameUser, text="Ingredientes")
+        self.labelIngredientes.grid(row=0,column=2)
+        self.labelIngredientes.configure (bg="#eaebf1")
+        self.listboxIngredientes = Listbox(self.frameUser, height=6, width=15)
+        self.listboxIngredientes.grid(row=1,column=2, padx=15)
+        self.labelPedido = Label(self.frameUser, text="Pedido")
+        self.labelPedido.grid(row=0,column=3, padx=10)
+        self.labelPedido.configure (bg="#eaebf1")
+        self.listboxPedido= Listbox(self.frameUser, height=6, width=18)
+        self.listboxPedido.grid(row=1,column=3)
+        self.scrollList = Scrollbar(self.frameUser, command=  self.listboxPedido.yview)
+        self.scrollList.grid(row=1,column=4, sticky="nesw")
+        self.listboxPedido.config(yscrollcommand=self.scrollList.set)
+        
+        self.labelCantidad = Label(self.frameUser, text="Cantidad")
+        self.labelCantidad.grid(row=2,column=0)
+        self.labelCantidad.configure (bg="#eaebf1")
+        self.txtCantidadBebidas = Entry(self.frameUser, width=16)
+        self.txtCantidadBebidas.grid(row=3,column=0)
+        self.btnAgregar = Button(self.frameUser, text="Agregar" , height = 5, width = 10, command=self.AgregarBebidaPedido)
+        self.btnVolverUser = Button(self.frameUser, text="Volver", height = 5, width = 10, command=lambda:self.PrincipalVolver(False))
+        self.btnVolverUser.grid(column=3, row=4, pady=10)
+        self.btnRealizarPedido = Button(self.frameUser, text="Realizar Pedido", height = 5, width = 10)
+        self.btnAgregar.grid(column=0, row=4, pady=10)
+        self.btnRealizarPedido.grid(column=2, row=4, pady=10)
+        
+        self.listboxBebidasDisponibles.bind("<<ListboxSelect>>", lambda y: self.VerBebida(self.listboxIngredientes))
+        self.listboxPedido.bind("<Double-Button-1>", lambda x: self.EliminarItemPedido())
+        
+        #<<ListboxSelect>>
         
         #FRAME ADMIN
         
@@ -469,7 +579,7 @@ class FullScreenWindow:
         self.btnRecetas = Button(self.frameAdmin, text="Recetas", command=self.RecetasVentana , height = 5, width = 10)
         self.btnContenedores.grid(column=0, row=0, padx=80, pady=40)
         self.btnRecetas.grid(column=1, row=0, padx=10, pady=40)
-        self.btnVolverPrincipal = Button(self.frameAdmin, text="Volver", command=self.PrincipalVolver)
+        self.btnVolverPrincipal = Button(self.frameAdmin, text="Volver", command=lambda:self.PrincipalVolver(True))
         self.btnVolverPrincipal.grid(column=2, row=1)    
         
         #FRAME RECETA
@@ -495,8 +605,8 @@ class FullScreenWindow:
         Receta        
         """
         
-        self.btnVerReceta = Button(self.frameReceta, text=self.textoBotonVerReceta, command=lambda:self.clicked("Ver /n Receta") , height = 5, width = 5)
-        self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=lambda:self.RecetasEditarReceta(self.diccionarioListaGeneral[self.listboxRecetasGeneral.get(ACTIVE)]) , height = 5, width = 5)
+        self.btnVerReceta = Button(self.frameReceta, text=self.textoBotonVerReceta, command=lambda:self.VerReceta(self.diccionarioListaGeneral[ self.listboxRecetasGeneral.get(ACTIVE) ]), height = 5, width = 5)
+        self.btnEditarReceta = Button(self.frameReceta, text=self.textoBotonEditarReceta, command=lambda:self.RecetasEditarReceta( self.diccionarioListaGeneral[ self.listboxRecetasGeneral.get(ACTIVE) ] ) , height = 5, width = 5)
         self.btnEliminarReceta = Button(self.frameReceta, text=self.textoBotonEliminarReceta, command=self.EliminarReceta , height = 5, width = 5)
         self.btnCrearReceta = Button(self.frameReceta, text=self.textoBotonCrearReceta, command=self.RecetasCrearReceta , height = 5, width = 5)
         self.btnVolverAdmin = Button(self.frameReceta, text="Volver", command=self.AdminVolver)
@@ -562,7 +672,7 @@ class FullScreenWindow:
         #~ self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
         self.listBoxRecetaActualCrear.bind("<Double-Button-1>", lambda x: self.EliminarItemListbox(self.listBoxRecetaActualCrear))
         #~ command=lambda:self.clicked('Eliminar \n' + 'Receta')
-        self.btnVolverRecetaCrear = Button(self.frameRecetaCrear, text="Volver", command=lambda:self.RecetasVolver(True) )
+        self.btnVolverRecetaCrear = Button(self.frameRecetaCrear, text="Volver", command=lambda:self.RecetasVolver(1) )
         self.btnVolverRecetaCrear.grid(row=4,column=2)
         #BOTON AGREGAR ------------------------------------------------------------
         self.btnAgregarRecetaCrear = Button(self.frameRecetaCrear, text="Agregar", command=lambda:self.AgregarIngrediente(self.comboIngredientesCrear.get(),self.txtCantidadCrear.get(),self.listBoxRecetaActualCrear))
@@ -572,7 +682,7 @@ class FullScreenWindow:
         self.btnCrearRecetaCrear.grid(row=5, column=0,columnspan=3,pady=8)
                 
                 
-#FRAME RECETA-EDITAR(EDITAR EN PROGRESO)
+#FRAME RECETA-EDITAR
         
         #Array para llevar la logica para crear la receta que basicamente poseera ingrediente id.ingrediente y cantidad
         
@@ -607,10 +717,10 @@ class FullScreenWindow:
         self.txtCantidadEditar.grid(row=1,column=1,padx=2,sticky=N)
         self.txtRecetaNombreEditar.grid(row=3,column=0)
         
-        self.listBoxRecetaActualEditar = Listbox(self.frameRecetaEditar)
+        self.listBoxRecetaActualEditar = Listbox(self.frameRecetaEditar, height=6)
         self.listBoxRecetaActualEditar.grid(row=1,column=2)
         
-        self.btnVolverRecetaEditar = Button(self.frameRecetaEditar, text="Volver", command=lambda:self.RecetasVolver(False) )
+        self.btnVolverRecetaEditar = Button(self.frameRecetaEditar, text="Volver", command=lambda:self.RecetasVolver(2) )
         self.btnVolverRecetaEditar.grid(row=4,column=2)
         
         self.listBoxRecetaActualEditar.bind("<Double-Button-1>", lambda x: self.EliminarItemListbox(self.listBoxRecetaActualEditar))
@@ -620,7 +730,29 @@ class FullScreenWindow:
         #BOTON CREAR -------------------------------------------------------------------
         self.btnEditarRecetaEditar = Button(self.frameRecetaEditar, text="Editar Receta", command=self.EditarReceta, width = 55)
         self.btnEditarRecetaEditar.grid(row=5, column=0,columnspan=3,pady=8)
-                        
+                       
+        #FRAME RECETA-VER
+        
+        
+        self.textoLabelVer = StringVar()
+        
+        self.frameRecetaVer = Frame(self.tk)
+        self.labelRecetaVer = Label(self.tk, text="Ver Receta")
+        self.labelRecetaVer.configure (bg="#eaebf1")
+        self.frameRecetaVer.configure (bg="#eaebf1") 
+        self.labelNombreReceta = Label(self.frameRecetaVer, text="Nombre de la Receta:", anchor="center")
+        self.labelNombreReceta.grid(row=0,column=0,padx=30)
+        self.labelNombreRecetaReal = Label(self.frameRecetaVer, text="aqui se ve el nombre",textvariable=self.textoLabelVer, height=15, wraplength = 150, padx=20)
+        self.labelNombreRecetaReal.grid(row=1,column=0,padx=30)
+        self.labelIngredientesVer = Label(self.frameRecetaVer, text="Ingredientes")
+        self.labelIngredientesVer.grid(row=0,column=3,padx=55,columnspan=2)
+        self.listBoxRecetaVer = Listbox(self.frameRecetaVer, height=6)
+        self.listBoxRecetaVer.grid(row=1,column=3, sticky="e",columnspan=2,padx=55)
+        self.labelNombreReceta.configure (bg="#eaebf1") 
+        self.labelNombreRecetaReal.configure (bg="#eaebf1") 
+        self.labelIngredientesVer.configure (bg="#eaebf1") 
+        self.btnVolverRecetaVer = Button(self.frameRecetaVer, text="Volver", command=lambda:self.RecetasVolver(3) )
+        self.btnVolverRecetaVer.grid(row=4,column=4)
         
         #FRAME CONTENEDOR
         
