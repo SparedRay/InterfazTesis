@@ -249,6 +249,20 @@ class FullScreenWindow:
         self.comboIngredientesEditar['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
         self.comboIngredientesEditar.current(0)  
 
+    def VaciadoContenedorVentana(self):
+        self.labelBienvenida.pack_forget()
+        self.frameAdmin.pack_forget()
+        self.labelAdmin.pack_forget()
+        self.frameVaciadoContenedor.pack(fill=BOTH,expand=1)
+        ingredientes = self.dbManager.ObtenerIngredientes()
+        #~ self.comboIngredientesCrear['values'] = (ingredientes[0][1],ingredientes[1][1],ingredientes[2][1],ingredientes[3][1],ingredientes[4][1],ingredientes[5][1])
+        self.labelVaciadoContenedor1['text'] = ingredientes[0][1]
+        self.labelVaciadoContenedor2['text'] = ingredientes[1][1]
+        self.labelVaciadoContenedor3['text'] = ingredientes[2][1]
+        self.labelVaciadoContenedor4['text'] = ingredientes[3][1]
+        self.labelVaciadoContenedor5['text'] = ingredientes[4][1]
+        self.labelVaciadoContenedor6['text'] = ingredientes[5][1]
+
     def ContenedorVentana(self):
         self.labelBienvenida.pack_forget()
         connection = sqlite3.connect("DBSystem.sqlite3")
@@ -257,14 +271,6 @@ class FullScreenWindow:
         cursor.execute("SELECT * FROM Contenedores")
         contenedores = cursor.fetchall()
         
-        #~ if(len(contenedores) != 6):
-            #~ cursor.execute("TRUNCATE TABLE Contenedores")    
-            #~ initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
-
-            #~ for info in initialInfo:
-                #~ cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
-                #~ connection.commit()
-        #~ else:
         cursor.execute("SELECT * FROM Contenedores")
         contenedores = cursor.fetchall()
         print(contenedores)
@@ -400,6 +406,7 @@ class FullScreenWindow:
         self.txtCantidadCrear.config(validate='key')
         self.RecetasVolver(True)
 
+
     def RecetasVolver(self,i): 
         self.LogicaListaGeneral(self.listboxRecetasGeneral)
         self.diccionarioIngredientes = {}
@@ -420,10 +427,22 @@ class FullScreenWindow:
     def AdminVolver(self):
     	self.frameContenedor.pack_forget()
     	self.frameReceta.pack_forget()
+    	self.frameVaciadoContenedor.pack_forget()
+        #~ self.frameVaciadoContenedor.pack_forget()
     	self.labelReceta.pack_forget()
+        
 
     	self.labelAdmin.pack()
+        
     	self.frameAdmin.pack(fill=BOTH,expand=1)
+
+    #~ def AdminVolverVaciado(self):
+    	#~ self.frameContenedor.pack_forget()
+    	#~ self.frameReceta.pack_forget()
+    	#~ self.labelReceta.pack_forget()
+
+    	#~ self.labelAdmin.pack()
+    	#~ self.frameAdmin.pack(fill=BOTH,expand=1)
         
     def PrincipalVolver(self,isAdmin):
         if isAdmin:
@@ -455,6 +474,9 @@ class FullScreenWindow:
             print("iguales")
             messagebox.showerror("Error", "NO pueden existir dos ingredientes con el mismo nombre")
             return
+            
+    def MostarV(self):
+        print(self.rbOpcionVaciado.get())
      
     def AgregarBebidaPedido(self):
         self.diccionarioPedido[ self.listboxBebidasDisponibles.get(ACTIVE) ] = self.txtCantidadBebidas.get()
@@ -499,7 +521,7 @@ class FullScreenWindow:
         self.tk.configure (bg="#eaebf1")
         
         
-        #FRAME PRINCIPAL
+        #FRAME PRINCIPAL 
 
         self.labelBienvenida = Label(self.tk, text="Bienvenido")
         self.labelBienvenida.configure (bg="#eaebf1")
@@ -574,11 +596,16 @@ class FullScreenWindow:
 
         self.frameAdmin.configure (bg="#eaebf1")  
         
+        self.textoVaciadoContenedores= """Vaciado de 
+Contenedores
+        """
         
         self.btnContenedores = Button(self.frameAdmin, text="Contenedores", command=self.ContenedorVentana , height = 5, width = 10)
+        self.btnVaciadoContenedores = Button(self.frameAdmin, text=self.textoVaciadoContenedores, command=self.VaciadoContenedorVentana , height = 5, width = 10)
         self.btnRecetas = Button(self.frameAdmin, text="Recetas", command=self.RecetasVentana , height = 5, width = 10)
-        self.btnContenedores.grid(column=0, row=0, padx=80, pady=40)
-        self.btnRecetas.grid(column=1, row=0, padx=10, pady=40)
+        self.btnContenedores.grid(column=0, row=0, padx=23, pady=40)
+        self.btnRecetas.grid(column=1, row=0, padx=23, pady=40)
+        self.btnVaciadoContenedores.grid(column=2, row=0, padx=23, pady=40)
         self.btnVolverPrincipal = Button(self.frameAdmin, text="Volver", command=lambda:self.PrincipalVolver(True))
         self.btnVolverPrincipal.grid(column=2, row=1)    
         
@@ -801,6 +828,66 @@ class FullScreenWindow:
         self.TextBoxContenedor5.bind("<FocusIn>", lambda x:self.AbrirTeclado())
         self.TextBoxContenedor6.bind("<FocusIn>", lambda x:self.AbrirTeclado())
         #~ self.hilo1.terminate()
+        
+#FRAME VACIADO CONTENEDOR
+        self.frameVaciadoContenedor = Frame(self.tk)
+        self.labelVaciadoContenedor1 = Label(self.frameVaciadoContenedor, text="Contenedor 1")
+        self.labelVaciadoContenedor1.grid(column=0, row=1)
+        self.labelVaciadoContenedor2 = Label(self.frameVaciadoContenedor, text="Contenedor 2")
+        self.labelVaciadoContenedor2.grid(column=0, row=2)
+        self.labelVaciadoContenedor3 = Label(self.frameVaciadoContenedor, text="Contenedor 3")
+        self.labelVaciadoContenedor3.grid(column=0, row=3)
+        self.labelVaciadoContenedor4 = Label(self.frameVaciadoContenedor, text="Contenedor 4")
+        self.labelVaciadoContenedor4.grid(column=0, row=4)
+        self.labelVaciadoContenedor5 = Label(self.frameVaciadoContenedor, text="Contenedor 5")
+        self.labelVaciadoContenedor5.grid(column=0, row=5)
+        self.labelVaciadoContenedor6 = Label(self.frameVaciadoContenedor, text="Contenedor 6")
+        self.labelVaciadoContenedor6.grid(column=0, row=6)
+        self.btnVolverVaciado = Button(self.frameVaciadoContenedor, text="Volver", command=self.AdminVolver)
+        self.btnVolverVaciado.grid(column=2, row=0)     
+        self.TextBoxVaciadoContenedor1=Entry(self.frameVaciadoContenedor)
+        self.TextBoxVaciadoContenedor1.grid(column=1,row=1)
+        self.TextBoxVaciadoContenedor2=Entry(self.frameVaciadoContenedor)
+        self.TextBoxVaciadoContenedor2.grid(column=1,row=2)
+        self.TextBoxVaciadoContenedor3=Entry(self.frameVaciadoContenedor)
+        self.TextBoxVaciadoContenedor3.grid(column=1,row=3)
+        self.TextBoxVaciadoContenedor4=Entry(self.frameVaciadoContenedor)
+        self.TextBoxVaciadoContenedor4.grid(column=1,row=4)
+        self.TextBoxVaciadoContenedor5=Entry(self.frameVaciadoContenedor)
+        self.TextBoxVaciadoContenedor5.grid(column=1,row=5)
+        self.TextBoxVaciadoContenedor6=Entry(self.frameVaciadoContenedor)
+        self.TextBoxVaciadoContenedor6.grid(column=1,row=6)
+        
+        self.rbOpcionVaciado = IntVar()
+        
+        self.rbContenedor1 = Radiobutton(self.frameVaciadoContenedor,text="         ",variable=self.rbOpcionVaciado, value=1, command=self.MostarV,indicatoron=False)
+        self.rbContenedor2 = Radiobutton(self.frameVaciadoContenedor,text="         ",variable=self.rbOpcionVaciado, value=2, command=self.MostarV,indicatoron=False)
+        self.rbContenedor3 = Radiobutton(self.frameVaciadoContenedor,text="         ",variable=self.rbOpcionVaciado, value=3, command=self.MostarV,indicatoron=False)
+        self.rbContenedor4 = Radiobutton(self.frameVaciadoContenedor,text="         ",variable=self.rbOpcionVaciado, value=4, command=self.MostarV,indicatoron=False)
+        self.rbContenedor5 = Radiobutton(self.frameVaciadoContenedor,text="         ",variable=self.rbOpcionVaciado, value=5, command=self.MostarV,indicatoron=False)
+        self.rbContenedor6 = Radiobutton(self.frameVaciadoContenedor,text="         ", variable=self.rbOpcionVaciado, value=6, command=self.MostarV,indicatoron=False)
+        self.rbContenedor1.grid(column=2,row=1)
+        self.rbContenedor2.grid(column=2,row=2)
+        self.rbContenedor3.grid(column=2,row=3)
+        self.rbContenedor4.grid(column=2,row=4)
+        self.rbContenedor5.grid(column=2,row=5)
+        self.rbContenedor6.grid(column=2,row=6)
+        
+        self.btnVaciado = Button(self.frameVaciadoContenedor, text="Vaciar", command=self.AdminVolver, height = 5, width = 10)
+        self.btnVaciado.grid(column=3, row=7) 
+        
+        self.labelContenedor1ml = Label(self.frameVaciadoContenedor, text="1200 ml")
+        self.labelContenedor1ml.grid(column=3, row=1)
+        self.labelContenedor2ml = Label(self.frameVaciadoContenedor, text="1200 ml")
+        self.labelContenedor2ml.grid(column=3, row=2)
+        self.labelContenedor3ml = Label(self.frameVaciadoContenedor, text="1200 ml")
+        self.labelContenedor3ml.grid(column=3, row=3)
+        self.labelContenedor4ml = Label(self.frameVaciadoContenedor, text="1200 ml")
+        self.labelContenedor4ml.grid(column=3, row=4)
+        self.labelContenedor5ml = Label(self.frameVaciadoContenedor, text="1200 ml")
+        self.labelContenedor5ml.grid(column=3, row=5)
+        self.labelContenedor6ml = Label(self.frameVaciadoContenedor, text="1200 ml")
+        self.labelContenedor6ml.grid(column=3, row=6)
 
     
 
