@@ -490,6 +490,21 @@ class FullScreenWindow:
         print(self.rbOpcionVaciado.get())
     
 
+    def EnviarInformacion(self,trama):
+        self.nearby_devices = discover_devices(lookup_names=True)    
+        self.s = BluetoothSocket(RFCOMM)
+        #~ print(self.nearby_devices)
+        for addr, name in self.nearby_devices:
+            if name == "ESP32test":
+                service = find_service(address=addr)
+                first_match = service[0]
+                port = first_match["port"]
+                name = first_match["name"]
+                host = first_match["host"]
+                self.s.connect((host,1))
+                self.s.send(trama)
+        self.s.close()
+
 
     def RealizarPedido(self):
         print("Entramos en REALIZAR PEDIDO")
@@ -508,6 +523,7 @@ class FullScreenWindow:
             trama += str(self.diccionarioPedido[NombreReceta]) + chr(1)#Aqui agregamos final de receta 1
         trama+= chr(2) # fin de transmision 2
         print(trama)
+        self.EnviarInformacion(trama)
         #~ self.diccionarioPedido {Nombre receta : cantidad}
         #~ self.diccionarioListaGeneral {Nombre receta : id}
      
@@ -544,32 +560,9 @@ class FullScreenWindow:
         
     def __init__(self):
             
-        
-        #~ self.nearby_devices = discover_devices(lookup_names=True)    
-        #~ self.s = BluetoothSocket(RFCOMM)
-        #~ for addr, name in nearby_devices:
-            #~ if name == "ESP32test":
-                #~ service = find_service(address=addr)
-                #~ pprint(service)
-                #~ first_match = service[0]
-                #~ port = first_match["port"]
-                #~ name = first_match["name"]
-                #~ host = first_match["host"]
-                #~ print("#######################")
-                #~ s.connect((host,1))
-                #~ s.send(chr(1) + "A100" + chr(29) + "B50" + chr(29) + "E55" + chr(29) + chr(4))
-                #~ while True:
-                    #~ data = input()
-                    #~ if len(data) == 0: break
-                    #~ s.send(data)
-                #~ s.send(chr(4))
-                #~ print("CONNECT")
-                #~ s.close()
-        #~ print("  %s - %s" % (addr, name))
-            
             
         self.dbManager = DatabaseManager()
-        self.dbManager.BuscarCaracterEspecial("Contenedor 2")
+
         
         self.tk = Tk()
         self.tk.geometry("480x320")
