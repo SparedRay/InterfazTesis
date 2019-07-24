@@ -27,6 +27,7 @@ import sqlite3
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+from bluetooth import *
 
 import subprocess
 import threading
@@ -40,7 +41,7 @@ class DatabaseManager:
         self.connection = sqlite3.connect("DBSystem.sqlite3")
         self.cursor = self.connection.cursor()
     
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255))")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS Contenedores(ContenedorId integer PRIMARY KEY AUTOINCREMENT,Nombre varchar(255), CaracterEspecial varchar(1))")
         self.connection.commit()
         
         self.cursor.execute("CREATE TABLE IF NOT EXISTS Recetas(RecetasId integer PRIMARY KEY AUTOINCREMENT, Nombre varchar(255))")
@@ -56,11 +57,11 @@ class DatabaseManager:
         if(len(contenedores) != 6):
             self.cursor.execute("DELETE FROM Contenedores")   
             self.cursor.execute("DELETE FROM sqlite_sequence WHERE name='Contenedores'")
-            initialInfo = ["Contenedor 1","Contenedor 2","Contenedor 3","Contenedor 4","Contenedor 5","Contenedor 6"]
-
-            for info in initialInfo:
-                self.cursor.execute("INSERT INTO Contenedores(Nombre) VALUES ('{}')".format(info))
+            initialInfo = {"Contenedor 1" : "A","Contenedor 2" : "B","Contenedor 3" : "C","Contenedor 4" : "D","Contenedor 5" : "E" ,"Contenedor 6" : "F"}
+            for contenedor, caracterEspecial in initialInfo.items():
+                self.cursor.execute("INSERT INTO Contenedores(Nombre,CaracterEspecial) VALUES ('%s','%s')" % (contenedor,caracterEspecial) )
                 self.connection.commit()
+
             
         self.connection.close()#FIN DE CONSTRUCTOR
     
@@ -72,6 +73,15 @@ class DatabaseManager:
         self.cursor.execute("DELETE FROM IngredientesRecetas WHERE RecetaId=%s" % id)
         self.connection.commit()
         self.connection.close()
+        
+    def BuscarCaracterEspecial(self,contenedor):
+        self.connection = sqlite3.connect("DBSystem.sqlite3")
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("SELECT CaracterEspecial FROM Contenedores WHERE Nombre='%s'" % contenedor)
+        caracterEspecial = self.cursor.fetchall()
+        print(caracterEspecial)
+        self.connection.close()
+        return caracterEspecial
     
     def ObtenerIngredientes(self):
         self.connection = sqlite3.connect("DBSystem.sqlite3")
@@ -89,11 +99,12 @@ class DatabaseManager:
         self.cursor.execute("SELECT Nombre FROM Recetas WHERE RecetasId = %s" % id)
         nombre = self.cursor.fetchall()
         ######### AQUI TENEMOS EL NOMBRE DE LA RECETA########
-        self.cursor.execute("SELECT Contenedores.Nombre, IngredientesRecetas.Cantidad FROM IngredientesRecetas INNER JOIN Contenedores ON IngredientesRecetas.ContenedorId = Contenedores.ContenedorId WHERE IngredientesRecetas.RecetaId=%s" % id)
+        self.cursor.execute("SELECT Contenedores.Nombre, IngredientesRecetas.Cantidad, Contenedores.CaracterEspecial FROM IngredientesRecetas INNER JOIN Contenedores ON IngredientesRecetas.ContenedorId = Contenedores.ContenedorId WHERE IngredientesRecetas.RecetaId=%s" % id)
         ingredientes = self.cursor.fetchall()
         ##### AQUI TENEMOS LOS INGREDIENTES #####
         dic["Receta"] = nombre[0][0]
         dic["Ingredientes"] = ingredientes
+        #~ print(dic)
         return dic
         
     def ObtenerRecetas(self):
@@ -195,7 +206,7 @@ class FullScreenWindow:
         receta = self.listboxBebidasDisponibles.get(ACTIVE)
         id = self.diccionarioListaGeneral[receta]
         temp = self.dbManager.VerReceta(id)
-        for nombre, cantidad in temp["Ingredientes"]:
+        for nombre, cantidad, caracterEspecial in temp["Ingredientes"]:
             self.diccionarioIngredientes[nombre] = cantidad
         self.MostrarIngredientes(self.listboxIngredientes)
         self.diccionarioIngredientes = {}
@@ -321,7 +332,7 @@ class FullScreenWindow:
         receta = self.listboxBebidasDisponibles.get(ACTIVE)
         id = self.diccionarioListaGeneral[receta]
         temp = self.dbManager.VerReceta(id)
-        for nombre, cantidad in temp["Ingredientes"]:
+        for nombre, cantidad, k in temp["Ingredientes"]:
             self.diccionarioIngredientes[nombre] = cantidad
         self.MostrarIngredientes(lista)
         self.diccionarioIngredientes = {}
@@ -477,6 +488,28 @@ class FullScreenWindow:
             
     def MostarV(self):
         print(self.rbOpcionVaciado.get())
+    
+
+
+    def RealizarPedido(self):
+        print("Entramos en REALIZAR PEDIDO")
+        trama = "" + chr(3); #Inicio de trama 3
+        print(self.diccionarioPedido)
+        for NombreReceta in self.diccionarioPedido.keys():
+            print("Iniciamos primer for")
+            id = self.diccionarioListaGeneral[NombreReceta]
+            receta = self.dbManager.VerReceta(id)
+            for contenedor,cant,caracter in receta["Ingredientes"]:
+                #~ el separador entre contenedor y cantidad viene siendo donde esta chr(0)
+                #~ 
+                print("Muestro caracter")
+                print(caracter)
+                trama += caracter + chr(2) + str(cant) + chr(2)
+            trama += str(self.diccionarioPedido[NombreReceta]) + chr(1)#Aqui agregamos final de receta 1
+        trama+= chr(2) # fin de transmision 2
+        print(trama)
+        #~ self.diccionarioPedido {Nombre receta : cantidad}
+        #~ self.diccionarioListaGeneral {Nombre receta : id}
      
     def AgregarBebidaPedido(self):
         self.diccionarioPedido[ self.listboxBebidasDisponibles.get(ACTIVE) ] = self.txtCantidadBebidas.get()
@@ -510,7 +543,33 @@ class FullScreenWindow:
         
         
     def __init__(self):
+            
+        
+        #~ self.nearby_devices = discover_devices(lookup_names=True)    
+        #~ self.s = BluetoothSocket(RFCOMM)
+        #~ for addr, name in nearby_devices:
+            #~ if name == "ESP32test":
+                #~ service = find_service(address=addr)
+                #~ pprint(service)
+                #~ first_match = service[0]
+                #~ port = first_match["port"]
+                #~ name = first_match["name"]
+                #~ host = first_match["host"]
+                #~ print("#######################")
+                #~ s.connect((host,1))
+                #~ s.send(chr(1) + "A100" + chr(29) + "B50" + chr(29) + "E55" + chr(29) + chr(4))
+                #~ while True:
+                    #~ data = input()
+                    #~ if len(data) == 0: break
+                    #~ s.send(data)
+                #~ s.send(chr(4))
+                #~ print("CONNECT")
+                #~ s.close()
+        #~ print("  %s - %s" % (addr, name))
+            
+            
         self.dbManager = DatabaseManager()
+        self.dbManager.BuscarCaracterEspecial("Contenedor 2")
         
         self.tk = Tk()
         self.tk.geometry("480x320")
@@ -578,7 +637,7 @@ class FullScreenWindow:
         self.btnAgregar = Button(self.frameUser, text="Agregar" , height = 5, width = 10, command=self.AgregarBebidaPedido)
         self.btnVolverUser = Button(self.frameUser, text="Volver", height = 5, width = 10, command=lambda:self.PrincipalVolver(False))
         self.btnVolverUser.grid(column=3, row=4, pady=10)
-        self.btnRealizarPedido = Button(self.frameUser, text="Realizar Pedido", height = 5, width = 10)
+        self.btnRealizarPedido = Button(self.frameUser, text="Realizar Pedido", height = 5, width = 10, command=self.RealizarPedido)
         self.btnAgregar.grid(column=0, row=4, pady=10)
         self.btnRealizarPedido.grid(column=2, row=4, pady=10)
         
@@ -908,6 +967,7 @@ Contenedores
 def main(args):
         
     root = FullScreenWindow()
+    
 
 
     root.tk.mainloop()
