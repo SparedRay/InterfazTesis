@@ -20,6 +20,7 @@ class FullScreenWindow:
         self.tk.attributes("-zoomed", False)#PARA TRABAJAR EN HDMI
         self.tk.attributes("-fullscreen", False)
         self.tk.configure (bg="#eaebf1")
+        self.tk.protocol("WM_DELETE_WINDOW", self.btManager.Close)
         
         
         #FRAME PRINCIPAL 
@@ -692,7 +693,7 @@ class FullScreenWindow:
             trama += chr(7) + str(self.diccionarioPedido[NombreReceta]) + chr(8)#Aqui agregamos final de receta 1
         trama+= chr(4) # fin de transmision 2
         print(trama)
-        ## self.EnviarInformacion(trama)
+        self.btManager.Send(trama)
         #~ self.diccionarioPedido {Nombre receta : cantidad}
         #~ self.diccionarioListaGeneral {Nombre receta : id}
      
