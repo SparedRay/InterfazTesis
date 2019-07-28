@@ -119,7 +119,6 @@ class DatabaseManager:
         recetas = self.Select('Recetas', join='ORDER BY Nombre ASC')
         for id, nombre in recetas:
             dic[nombre] = id
-        self.connection.close()
         return dic
 
     def VerificarNombreEditar(self, id, nombre):
