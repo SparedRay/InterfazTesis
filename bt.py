@@ -26,7 +26,6 @@ class BluetoothManager:
 
     def Send(self, trama):
         self.esp_char.write(trama)
-        self.__async()
 
     def Close(self):
         self.per.disconnect()
