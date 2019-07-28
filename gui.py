@@ -422,7 +422,7 @@ class FullScreenWindow:
         receta = self.listboxBebidasDisponibles.get(ACTIVE)
         id = self.diccionarioListaGeneral[receta]
         temp = self.dbManager.VerReceta(id)
-        for nombre, cantidad in temp["Ingredientes"]:
+        for nombre, cantidad, caracterEspecial in temp["Ingredientes"]:
             self.diccionarioIngredientes[nombre] = cantidad
         self.MostrarIngredientes(self.listboxIngredientes)
         self.diccionarioIngredientes = {}
@@ -461,7 +461,7 @@ class FullScreenWindow:
         #~ self.diccionarioIngredientes 
         self.txtRecetaNombreEditar.delete(0, END)
         self.txtRecetaNombreEditar.insert(0, temp["Receta"])
-        for nombre, cantidad in temp["Ingredientes"]:
+        for nombre, cantidad, caracter in temp["Ingredientes"]:
             self.diccionarioIngredientes[nombre] = cantidad
         self.MostrarIngredientes(self.listBoxRecetaActualEditar)
         print(self.diccionarioIngredientes)
@@ -504,7 +504,7 @@ class FullScreenWindow:
 
     def VerReceta(self,id):
         temp = self.dbManager.VerReceta(id)
-        for nombre, cantidad in temp["Ingredientes"]:
+        for nombre, cantidad, caracter in temp["Ingredientes"]:
             self.diccionarioIngredientes[nombre] = cantidad
         self.MostrarIngredientes(self.listBoxRecetaVer)
         self.textoLabelVer.set(temp["Receta"])
@@ -534,7 +534,7 @@ class FullScreenWindow:
         receta = self.listboxBebidasDisponibles.get(ACTIVE)
         id = self.diccionarioListaGeneral[receta]
         temp = self.dbManager.VerReceta(id)
-        for nombre, cantidad in temp["Ingredientes"]:
+        for nombre, cantidad, k in temp["Ingredientes"]:
             self.diccionarioIngredientes[nombre] = cantidad
         self.MostrarIngredientes(lista)
         self.diccionarioIngredientes = {}
@@ -548,7 +548,6 @@ class FullScreenWindow:
             lista.insert('end',ingredientecantidad)
 
     def AgregarIngrediente(self,ingrediente,cantidad,lista):
-
         if len(cantidad) == 0:
             return
         self.diccionarioIngredientes[ingrediente] = cantidad
@@ -685,7 +684,7 @@ class FullScreenWindow:
             print("Iniciamos primer for")
             id = self.diccionarioListaGeneral[NombreReceta]
             receta = self.dbManager.VerReceta(id)
-            for cant,caracter in receta["Ingredientes"]:
+            for contenedor, cant, caracter in receta["Ingredientes"]:
                 #~ el separador entre contenedor y cantidad viene siendo donde esta chr(0)
                 print("Muestro caracter")
                 print(caracter)
